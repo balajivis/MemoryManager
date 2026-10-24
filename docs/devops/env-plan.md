@@ -267,6 +267,8 @@ MemoryManager/
     pm/                     pm: open-questions.md (single list of open items)
     spec/                   pm: spec.md (after the frame is approved)
     dev/ ux/ qa/ devops/    each role's prep docs, DRAFT until the spec is approved
+  site/                     marketing landing page: static HTML, no build step (dev builds, ux owns copy)
+  deploy/                   devops: nginx + logrotate config and deploy.sh for the landing page on dev-vm (deploys only from main)
   (product code, deploy configs: decided with the toolchain, after the spec)
 ```
 
