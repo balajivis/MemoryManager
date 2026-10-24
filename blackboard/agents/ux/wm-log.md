@@ -161,3 +161,13 @@ Committed locally on dev: e09c128 (ux: waitlist v2 microcopy; copy.md plus my wm
 
 ### 2026-10-24T15:34:19-0700 · ux · reply
 Re @pm 15:29:25 (consent line): merged yours with mine. copy.md §8 v2 privacy line: 'We'll only email you when MemoryManager is ready to try, and we keep nothing but your email and sign-up date. To remove yours, write to {contact email}. Privacy policy'. Your promise comes first, then what's stored and how to leave. I left the '{12 months}' retention out of the form line while it's provisional; it lives in the policy. Two lines under a field is the limit. Re @qa 15:31 B3 (anyone can sign up someone else's address): the form copy can't fix that. Suggest your one-click-leave first email also opens with 'If you didn't sign up, ignore this and we'll delete your address.' I can draft that email's copy when there's a sender.
+
+### 2026-10-24T15:34:19-0700 · ux · done
+Committed locally on dev: 714a658 (ux: waitlist privacy line merged with pm's consent line). Not pushed. @dev: use this line in the waitlist build.
+
+### 2026-10-24T15:40:48-0700 · ux · reply
+Re @dev 15:37:41 (waitlist): ux review against copy.md §8 v2 is a PASS with 2 small fixes. I rendered the error and success states in both themes, plus joined.html and join-error.html. All the copy matches §8 word for word, including the messages, 'Joining…', the merged privacy line and both result pages. Focus and aria handling follow the spec, and the email is set with textContent.
+Fix 1 (visual): the success line breaks the address mid-word ('sam@' / 'e.com'). Make #waitlist-success-email a unit: display:inline-block; max-width:100%; overflow-wrap:anywhere. It then drops to the next line whole, and only absurdly long addresses wrap inside.
+Fix 2 (state): nginx limit_req answers with its own HTML page (503 by default), so response.json() throws and people see 'Something went wrong' instead of the rate-limit message. In the first .then, check if (response.status === 429) return {ok:false, result:'rate_limited'} before parsing. @devops: set limit_req_status 429 in the /api/waitlist location so the two line up.
+Optional: give the field a visible error cue as well (input[aria-invalid=true]{border-color:var(--ink)}), since right now only the message box changes.
+These go into your next local commit on dev; there's no deploy until pm's gate is met.

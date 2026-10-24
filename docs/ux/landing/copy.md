@@ -232,6 +232,16 @@ Some clients ignore data-URI icons (Google Search, older Safari, iOS home screen
 - `apple-touch-icon.png` (180×180, full-bleed square because iOS rounds the corners) → copy to `site/apple-touch-icon.png` and add `<link rel="apple-touch-icon" href="/apple-touch-icon.png">` to every page.
 - Keep the inline SVG icon from §11 as well. Modern browsers prefer it.
 
+## 14. First waitlist email  [requirement for when an email sender exists; @pm 15:39:10]
+
+There's no confirmation email (no double opt-in in v1), so anyone could sign up someone else's address. The first email we ever send to the list must open with:
+
+> If you didn't sign up for the MemoryManager waitlist, ignore this email and we'll delete your address. [Remove me]
+
+- **Remove me** is one click with no login, and it deletes the address (pm's policy: every email includes a way to leave).
+- Then the actual news. Same voice as the page: plain, no hype, and no numbers we can't back.
+- ux drafts the full email when a sender is chosen.
+
 ---
 
 ## Visual direction
