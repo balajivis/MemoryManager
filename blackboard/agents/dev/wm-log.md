@@ -136,3 +136,67 @@ Hard rules checked: no stats, logos or testimonials, no Fidelity or Raj, no cert
 
 ### 2026-10-24T14:37:34-0700 · dev · reply
 Re @ux 14:33:05 reply + 14:34:44 done (copy.md): sorry, my 14:35:43 build crossed your copy and used my own text. I've now rebuilt site/index.html from docs/ux/landing/copy.md, with your text word for word: metadata, header nav, hero, the memory card (3 entries from ChatGPT, Claude and Gemini, "used just now in Cursor", -1° tilt on desktop only), problem, how it works (01/02/03 in mono), what changes, your memory your rules, the works-with chips plus fine print, the waitlist band with the always-visible preview caption, an aria-live notice that says exactly "Sign-up isn't live yet. Nothing was sent or saved.", no localStorage, the TODO comment, and the footer. Visual: your tokens in both themes; Newsreader, Inter and JetBrains Mono; one accent; smooth scroll only without reduced motion. Same preview link: https://claude.ai/artifact/1ZkuaWjPj9rJELyquJGZ7u (version 2). Two builder calls for you to check: the waitlist band is a rounded panel inside the content width, not full-bleed; and the email field has no `required` because every submit shows the notice. @qa: ready for your checks (the only external request is Google Fonts, per ux 14:34:51). @pm: review after ux and qa. Not committed.
+
+### 2026-10-24T14:43:35-0700 · dev · warn
+Repo pushed with the user's OK. Remote: https://github.com/balajivis/MemoryManager, PRIVATE (the user chose private because docs and logs name Fidelity/Raj). main has 3 commits: 179c8ea initial, 04f81c2 landing page + ux copy.md + logs, bed2310 standalone-HTML fix. @devops: your uncommitted edit to docs/devops/env-plan.md is still in the working tree; I left it out on purpose. Commits still need the user's say-so; pushing to origin is now set up.
+
+### 2026-10-24T14:43:35-0700 · dev · ask
+@devops: the user says "We want to get this deployed publicly". That means the landing page, site/index.html on origin/main (bed2310). It's a standalone HTML file now, with doctype, UTF-8 charset and viewport, so it serves correctly from plain nginx. Its only external request is Google Fonts. Deployment is yours. The user made the public call; please bring them the specifics they still own: where it goes (your dev-vm/nginx with port 80 opened to the world, vs a static host), the domain, and TLS. Note the repo is PRIVATE, so GitHub Pages needs a paid plan. Gating: @qa's checks and @pm's review against the brief are still open. I'd deploy once qa passes, unless the user says go now. Ping @dev with any page changes the deploy needs.
+
+### 2026-10-24T14:43:35-0700 · dev · obs
+Builder note: the claude.ai preview (https://claude.ai/artifact/1ZkuaWjPj9rJELyquJGZ7u) is still at v2, which has the same content as bed2310 minus the doctype/head wrapper the preview adds itself. Future previews must be published from a copy with that wrapper stripped. The source of truth is site/index.html. @qa: test the file itself for mobile and charset, since that's what gets deployed.
+
+### 2026-10-24T14:45:01-0700 · dev · done
+Re @qa 14:40:09 ask and @ux 14:40:44 ask (landing review): all 6 changes are applied in one pass. Committed 1942b04 and pushed.
+QA fixes:
+1 name="email" removed, so with JS off nothing is submitted.
+2 standalone document (doctype, lang, UTF-8 charset, viewport) was already in bed2310.
+3 the email field border now uses --muted.
+UX fixes:
+(a) visible "Example" tag on the card, using your markup and CSS.
+(b) copy now reads "lives in chats across several different apps".
+(c) at ≤520px the header stays on one row and the text nav links are hidden.
+Preview is updated to v3 at the same link: https://claude.ai/artifact/1ZkuaWjPj9rJELyquJGZ7u. @ux: please re-render both themes at both widths. @qa: please recheck. @pm: ready for your review.
+
+### 2026-10-24T14:45:01-0700 · dev · ask
+@devops: DEPLOY REQUEST, directly from the user ("Ask Devops to deploy this page"). Please deploy site/index.html from origin/main @ 1942b04 publicly. This replaces my 14:5x ask, which waited on QA; the user is calling it now. PM's launch prerequisite (pm 14:39:12) applies: self-host the three OFL fonts under site/fonts/ before it goes public. The user has decided to publish, so that's now unblocked; you offered to do it. Where to host (your dev-vm/nginx with port 80 opened to the world, or a static host), the domain and TLS are details for you to settle with the user. Ping @dev for any change the page itself needs. qa's recheck and pm's review can run against the live page.
+
+### 2026-10-24T14:47:10-0700 · dev · done
+Re @devops's deploy prep: site/index.html now loads self-hosted fonts (fonts/fonts.css) and makes no third-party requests, which meets pm 14:39:12's launch prerequisite. Committed 55313bd with site/fonts/ (3 woff2 files plus OFL licenses, from devops) and pushed to origin/main. DevOps is deploying to S3 + CloudFront (HTTPS on a *.cloudfront.net URL; a custom domain can come later). @qa @pm: recheck against the live URL once devops posts it.
+
+### 2026-10-24T14:49:13-0700 · dev · reply
+Re @qa 14:44:01, @ux 14:44:12 warn, @pm 14:44:21 done: everything you listed as open has landed since bed2310. Current file: origin/main 55313bd.
+- QA #1: name="email" removed (1942b04).
+- QA #2: standalone document (bed2310).
+- QA #3: input border uses --muted (1942b04).
+- ux (a) Example tag, (b) "several different apps", (c) 520px header: all in 1942b04.
+- PM fonts prerequisite: done in 55313bd. site/index.html loads fonts/fonts.css (devops's OFL woff2 files) and grep finds no http(s):// left in index.html or fonts.css. Not waived; met.
+@qa: please rerun your full check on site/index.html at 55313bd, the exact file devops will deploy. @devops: per your 14:44:02 claim, deploy waits for that recheck.
+
+### 2026-10-24T15:04:14-0700 · dev · reply
+Re @pm 14:59:11 + @devops 15:03:51 (share tags, favicon, 404): ready to build all three in one pass as soon as @ux posts the spec in copy.md. My plan: og/twitter tags with absolute https://memorymanager.getkapi.com/ URLs, as devops says; the 1200x630 card as site/og-card.png, rendered from an HTML/CSS version of the memory card with headless Chrome so it matches the page's fonts and keeps the 'Example' label; the favicon as an inline SVG data URI; site/404.html as a standalone page reusing fonts.css. I'll post the commit hash for @qa, then @devops.
+
+### 2026-10-24T15:11:24-0700 · dev · done
+Re @ux 15:05:35 ask (polish pass): built from copy.md §10-12 in one pass. Committed d30956b and pushed.
+(1) §10: canonical, og:* and twitter:card tags in site/index.html, absolute URLs on https://memorymanager.getkapi.com; ux's card copied to site/og-card.png (1200x630; I checked it shows the EXAMPLE pill and no logos or numbers).
+(2) §11: inline SVG favicon in index.html and 404.html.
+(3) §12: site/404.html with your copy, noindex, wordmark-only header, the same tokens, fonts and dark mode, centered vertically. Every URL is root-absolute (/fonts/fonts.css, /); grep finds no relative href or src. Both pages parse cleanly.
+Also committed: docs/ux/landing (copy.md, og-card.html/png). Left out: pm's untracked docs/pm/legal/ and devops's env-plan.md edit.
+@qa: please check d30956b, especially 404.html at a nested path keeping its fonts; the share preview needs DNS + HTTPS first. @devops: redeploy d30956b once qa passes; your error_page wiring is already in place.
+
+### 2026-10-24T15:14:15-0700 · dev · claim
+Taking the legal-pages build (re @pm 15:10:06 ask and 15:10:34 done): site/privacy.html and site/terms.html in the 404.html style (root-absolute URLs, same tokens and fonts, reading width), robots.txt, sitemap.xml and llms.txt copied into site/, and Privacy and Terms footer links on index.html and 404.html. Placeholders stay visible and the pages are marked DRAFT. @ux: I'll start with a plain reading-width layout; send layout or footer changes and I'll apply them, so only I edit site/. No redeploy.
+
+### 2026-10-24T15:17:14-0700 · dev · done
+Re @pm 15:10:06/15:10:34 (legal pages): built. Committed fbd9968 and pushed.
+- site/privacy.html and site/terms.html, rendered from docs/pm/legal/*.md (as of 15:14) in the 404 style: root-absolute URLs, same tokens and fonts, 40rem reading width, dark mode. The DRAFT note shows as a callout. Every {placeholder} is highlighted (11 in privacy, 5 in terms), including your inline notes such as the CloudFront line. While the .md has its DRAFT line the pages also carry noindex, and that drops automatically when I re-render the final text.
+- site/robots.txt, sitemap.xml and llms.txt copied verbatim.
+- Privacy · Terms footer links on index, 404, privacy and terms.
+- Checks: all 4 pages parse cleanly; every local link resolves; no third-party URLs.
+@pm: when the final .md lands, ping @dev and I'll re-render; please don't hand-edit the .html. One content nit for you: privacy says "Today the site is a single information page", but it now also has these legal pages and a 404, so maybe "a single information page plus these legal pages".
+@ux: layout and footer placement are a first pass. Send changes and I'll apply them. I see your favicon.ico, apple-touch-icon and copy.md edits in progress; I left them out of the commit.
+@qa: ready for links and policy-vs-reality checks. @devops: no redeploy without the user's OK; latest is fbd9968.
+
+### 2026-10-24T15:19:26-0700 · dev · reply
+Re @pm 15:17:20 warn (release flow) and 15:17:41 reply: acknowledged, and I've read .claude/skills/release-flow/SKILL.md. Yes, fbd9968 crossed your warn; that was my last push. From now on: local commits on dev only, only my own paths plus my wm-log, no pushes, and a done entry with the short hash. The tree is on main right now, so I'm holding all commits until @devops posts that it's on dev.
+Queued for one pass, to start when @pm marks the legal text final (holding per 15:18:38): re-render privacy.html and terms.html; apply @ux's copy.md §13 layout and footer (the 68ch column, a 'Back to MemoryManager' header, <mark> placeholders, the 'MemoryManager (working name) · © 2026 · Privacy · Terms' footer with aria-current); add favicon.ico and apple-touch-icon.png. Then a local commit on dev, @qa checks, and @devops ships through the PR.
