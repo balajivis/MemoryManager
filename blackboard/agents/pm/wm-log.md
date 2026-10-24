@@ -136,3 +136,43 @@ Re @dev 12:36:44 (crypto-shredding): your lean is accepted. It's conditional, bu
 
 ### 2026-10-24T13:00:38-0700 · pm · warn
 STOP WORK: @dev @ux @qa @devops. The user has an update. Please stop what you're doing now. Finish only the current atomic step (don't leave a file half-written), then post a short obs saying where you stopped and what's in progress. Don't start new work, claims or replies until the PM posts the update. Docs stay as DRAFT.
+
+### 2026-10-24T14:24:10-0700 · pm · obs
+All 4 agents have confirmed they've stopped (dev at 14:23). Noted from @dev: ChatGPT Enterprise, Claude Enterprise and M365 Copilot can turn memory off for one group, so vendor-memory option (a) is viable on enterprise tiers. Hold until the PM posts the user's update.
+
+### 2026-10-24T14:29:46-0700 · pm · ask
+OPEN TASK from the user, for any agent: build a landing page for MemoryManager. The STOP WORK is lifted for this one task only. Everything else stays on hold. Claim before starting; the earliest claim wins.
+Brief (PM):
+- Audience: the 'governed AI team lead', someone who leads a team at a regulated firm (financial services first) using 2+ approved AI tools.
+- Promise: what your team learns in one AI chat becomes reviewed team memory, available in every AI tool you use, with the governance compliance needs.
+- Core message: 'Your team's AI chats are full of answers. Make them team knowledge.' Name the pain: knowledge stuck in one person's chat history, one vendor's memory, or an archive nobody can search.
+- How it works (3 steps): save a learning from any AI chat; a teammate reviews it before it's shared; any teammate's AI tool finds it, with the source and age shown.
+- Governance section: review before sharing, link back to the source chat, retention and legal hold, deletion with an audit trail, PII redaction, runs inside your firm, no per-person scoring.
+- Works with: ChatGPT, Claude, Copilot, Cursor, via MCP. Present these as tools it connects to, never as partners or endorsers.
+- CTA: 'Join the pilot'. A form can't submit anywhere yet, so show a contact or waitlist placeholder and do not fake a success message.
+HARD RULES:
+- No customer names, logos or testimonials. Never mention Fidelity or Raj.
+- No invented stats. No 'far lower cost' and no accuracy numbers, since nothing is measured yet.
+- No compliance-certification claims (SOC 2, FINRA-approved, etc.).
+- Product name: 'MemoryManager' (working name).
+Source material: docs/research/market-scan.md, docs/ux/flows.md. @ux should own copy and visual direction, either building it or reviewing whoever builds it. Deliverable: a single static HTML page. Post done with its path or link, and @pm will review against this brief. Don't commit without the user's OK.
+
+### 2026-10-24T14:30:29-0700 · pm · warn
+CORRECTION to the landing-page task (pm 'OPEN TASK'), from the user: the page is for the ORIGINAL product, not the governed team version. The plan is otherwise unchanged. Whoever claims it: use this brief instead.
+- Audience: people who use several AI tools (ChatGPT, Claude, Gemini, Copilot, Cursor) and keep losing context between them.
+- Promise, from the user's problem statement: one consolidated memory, outside any single AI, that acts like a mirror of your own brain, so every chatbot and tool starts with your context.
+- Pain to name: your best thinking is scattered across chats in different tools; every new chat starts from zero; you re-explain yourself again and again.
+- Benefits: better context, more accurate answers, less re-explaining (which means fewer tokens). Keep these QUALITATIVE: no numbers, no 'far lower cost' figures.
+- How it works (3 steps, suggested): bring in your chats or save as you go; your memory is organized in one place you own and can edit; any AI tool you use pulls the right context (e.g. via MCP).
+- Trust section: you own it, you can see and edit everything, delete anything, export anytime.
+- CTA: 'Join the waitlist'. The form can't submit anywhere, so use a placeholder and don't fake a success message.
+HARD RULES still apply:
+- No invented stats, testimonials or logos.
+- No implied partnership with AI vendors.
+- No Fidelity or Raj.
+- No security or certification claims.
+- Working name: MemoryManager.
+Deliverable: a single static HTML page; post done with its path; @pm reviews; no commit without the user's OK. @ux owns copy and look.
+
+### 2026-10-24T14:39:12-0700 · pm · reply
+Re @ux 14:34:51 and @devops 14:38:52 (fonts). PM call: Google Fonts is fine for the private preview. Self-hosting (devops's option: OFL woff2 under site/fonts/, Latin subset) is REQUIRED before any public launch. A product that promises 'you own your memory' shouldn't send every visitor's IP to a third party. @devops: don't start it until the user decides to publish. Logged as a launch prerequisite. I'll review the page after @ux's copy-fidelity pass and @qa's checks post done.

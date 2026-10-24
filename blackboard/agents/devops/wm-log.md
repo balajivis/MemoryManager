@@ -126,3 +126,12 @@ Re @qa 12:53:54 ask (schema.sql test points), from my read of @dev's draft so yo
 
 ### 2026-10-24T13:03:45-0700 · devops · obs
 Stopped (re @pm 13:00:38 STOP WORK). Nothing half-written. State: docs/devops/env-plan.md is DRAFT v2 (last edit: pm's b1 decision and vendor-memory item 9). blackboard/bb (file backend) is unchanged and passes 42/0 at blackboard/tests/bb-test.sh. The Postgres wiring for bb has NOT been started; it waits on the user. Git is initialized, nothing committed. On hold: a reply to @qa 13:01:41 (converting byte-offset cursors to seq at import is better than a synchronized final read; I agree in principle). No open claims other than env-plan and bb ownership. Waiting for the PM update.
+
+### 2026-10-24T14:33:48-0700 · devops · obs
+Re the landing-page task (@pm 14:29:46/14:30:29; @dev building, @ux on copy): not claiming anything. FYI for hosting, if the user wants it: the user has an AWS VM (dev-vm, Ubuntu 24.04 with nginx) that I set up today at their request. Port 80 is open only to the user's IP, so I could put the finished page there as a private preview URL on request. Making it public, adding a domain or TLS would each be the user's call. No action until someone asks @devops.
+
+### 2026-10-24T14:38:52-0700 · devops · reply
+Re @dev 14:35:43 done (site/ folder): agreed. env-plan §7 now lists site/ as the marketing landing page: static HTML, no build step. It stays out of git until the user OKs a commit, like everything else.
+
+### 2026-10-24T14:38:52-0700 · devops · reply
+Re @ux 14:34:51 reply (Google Fonts as the only external request), hosting input for @qa @pm: a third option keeps your look AND gets zero external requests. Self-host the three fonts as woff2 files under site/fonts/ with @font-face. Newsreader, Inter and JetBrains Mono are all SIL OFL, so redistribution is allowed (keep the OFL text next to them). That also avoids sending every visitor's IP to Google, which some EU regulators have objected to. Cost: about 100-300 KB of font files in the repo if you subset to Latin. I can fetch and subset them if you pick this; say so and I'll claim it.

@@ -1,0 +1,319 @@
+<title>MemoryManager: one memory for every AI you use</title>
+<meta name="description" content="Your context is scattered across ChatGPT, Claude, Gemini and more. MemoryManager keeps one memory you own, so every AI tool starts with your context.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap">
+<!-- Copy and visual direction: docs/ux/landing/copy.md (owner: ux). Use that text exactly. -->
+<style>
+  :root {
+    --bg: #faf8f4;
+    --surface: #ffffff;
+    --ink: #1c1b19;
+    --muted: #6b675f;
+    --line: #e6e1d8;
+    --accent: #1f5e5b;
+    --accent-ink: #ffffff;
+    --accent-tint: rgba(31, 94, 91, 0.08);
+    --band: #f2f1ec;
+    --serif: "Newsreader", "Iowan Old Style", Georgia, serif;
+    --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #141413;
+      --surface: #1d1c1a;
+      --ink: #edeae4;
+      --muted: #a39e94;
+      --line: #2e2c29;
+      --accent: #6fc2ba;
+      --accent-ink: #0e1f1e;
+      --accent-tint: rgba(111, 194, 186, 0.1);
+      --band: #191918;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #141413;
+    --surface: #1d1c1a;
+    --ink: #edeae4;
+    --muted: #a39e94;
+    --line: #2e2c29;
+    --accent: #6fc2ba;
+    --accent-ink: #0e1f1e;
+    --accent-tint: rgba(111, 194, 186, 0.1);
+    --band: #191918;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    html { scroll-behavior: smooth; }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 400 1.0625rem/1.6 var(--sans);
+    padding-inline: 16px;
+  }
+  .wrap { max-width: 1080px; margin-inline: auto; }
+  h1, h2, h3 { margin: 0; text-wrap: balance; }
+  h1, h2 { font-family: var(--serif); font-weight: 600; line-height: 1.1; letter-spacing: -0.01em; }
+  h3 { font-family: var(--sans); font-weight: 600; font-size: 1.0625rem; line-height: 1.35; }
+  p, ul, ol { margin: 0; }
+  a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+  .button {
+    display: inline-block; font: 600 1rem/1 var(--sans); color: var(--accent-ink); background: var(--accent);
+    border: 0; border-radius: 999px; padding: 14px 22px; text-decoration: none; cursor: pointer; white-space: nowrap;
+  }
+  .button:hover { filter: brightness(1.07); }
+
+  /* header */
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 20px; flex-wrap: wrap; }
+  .wordmark { font: 600 1.25rem/1 var(--serif); color: var(--ink); text-decoration: none; }
+  .top nav { display: flex; align-items: center; gap: 8px 24px; flex-wrap: wrap; }
+  .top nav a:not(.button) { color: var(--muted); text-decoration: none; font-size: 0.95rem; }
+  .top nav a:not(.button):hover { color: var(--ink); }
+  .top .button { padding: 11px 18px; font-size: 0.95rem; }
+
+  /* hero */
+  .hero { display: grid; grid-template-columns: 55fr 45fr; gap: 56px; align-items: center; padding-block: 72px 112px; }
+  .eyebrow { font: 500 0.78rem/1.3 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .hero h1 { font-size: clamp(2.25rem, 4.2vw + 0.6rem, 3.5rem); margin-block: 16px 20px; }
+  .subhead { font-size: 1.125rem; color: var(--ink); max-width: 36rem; }
+  .hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 24px; margin-top: 32px; }
+  .hero-actions .text-link { font-weight: 500; text-decoration: none; }
+  .hero-actions .text-link:hover { text-decoration: underline; }
+
+  /* memory card */
+  .memory {
+    margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(28, 27, 25, 0.06); overflow: hidden;
+  }
+  .memory-head { padding: 14px 20px; border-bottom: 1px solid var(--line); font-weight: 600; }
+  .memory ul { list-style: none; padding: 0; }
+  .memory li { padding: 16px 20px; border-bottom: 1px solid var(--line); display: grid; gap: 6px; }
+  .memory li:last-child { border-bottom: 0; }
+  .kind { font: 500 0.72rem/1 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .statement { color: var(--ink); line-height: 1.45; }
+  .meta { font: 400 0.78rem/1.3 var(--mono); color: var(--muted); }
+  .used { padding: 12px 20px; border-top: 1px solid var(--line); background: var(--accent-tint); color: var(--accent); font: 500 0.8rem/1.4 var(--mono); }
+
+  /* sections */
+  section { padding-block: 104px; border-top: 1px solid var(--line); }
+  section h2 { font-size: clamp(1.75rem, 2.6vw + 0.8rem, 2.5rem); }
+  .section-intro { color: var(--muted); font-size: 1.0625rem; margin-top: 12px; max-width: 36rem; }
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 40px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 24px; display: grid; gap: 8px; align-content: start; }
+  .card p { color: var(--muted); }
+  .after-cards { margin-top: 28px; color: var(--ink); max-width: 40rem; }
+
+  .steps { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; margin-top: 40px; }
+  .steps li { display: grid; gap: 10px; align-content: start; }
+  .step-num { font: 500 0.95rem/1 var(--mono); color: var(--accent); letter-spacing: 0.04em; }
+  .steps h3 { font-family: var(--serif); font-size: 1.375rem; font-weight: 600; }
+  .steps p { color: var(--muted); }
+
+  .rules { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 28px 48px; margin-top: 40px; max-width: 52rem; }
+  .rules li { display: grid; gap: 6px; }
+  .rules p { color: var(--muted); }
+
+  .works { padding-block: 72px; }
+  .works h2 { font-family: var(--sans); font-size: 1.125rem; font-weight: 600; letter-spacing: 0; }
+  .chips { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+  .chips li { color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; font-size: 0.95rem; }
+  .fineprint { margin-top: 16px; font-size: 0.875rem; color: var(--muted); max-width: 44rem; }
+
+  /* waitlist band */
+  .band { background: var(--band); border: 1px solid var(--line); border-radius: 16px; padding-inline: 24px; }
+  .band-inner { max-width: 640px; margin-inline: auto; text-align: center; display: grid; gap: 14px; justify-items: center; }
+  .band-inner > p { color: var(--muted); }
+  form { width: 100%; display: grid; gap: 8px; margin-top: 12px; text-align: left; }
+  label { font-weight: 500; font-size: 0.95rem; }
+  .field { display: flex; gap: 10px; }
+  input[type="email"] {
+    flex: 1 1 auto; min-width: 0; font: 400 1rem/1 var(--sans); color: var(--ink); background: var(--surface);
+    border: 1px solid var(--line); border-radius: 999px; padding: 13px 18px;
+  }
+  input[type="email"]::placeholder { color: var(--muted); }
+  input[type="email"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 999px; }
+  .caption { font-size: 0.875rem; color: var(--muted); }
+  .notice:empty { padding: 0; }
+  .notice { font-weight: 500; color: var(--ink); background: var(--accent-tint); border-radius: 8px; padding: 10px 14px; }
+
+  footer { padding-block: 32px 48px; border-top: 1px solid var(--line); display: grid; gap: 6px; font-size: 0.875rem; color: var(--muted); }
+
+  @media (min-width: 881px) {
+    .memory { transform: rotate(-1deg); }
+  }
+  @media (max-width: 880px) {
+    .hero { grid-template-columns: 1fr; gap: 40px; padding-block: 40px 64px; }
+    section { padding-block: 64px; }
+    .works { padding-block: 56px; }
+    .cards, .steps, .rules { grid-template-columns: 1fr; }
+    .steps { gap: 32px; }
+    .field { flex-direction: column; }
+    .field .button { width: 100%; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <a class="wordmark" href="#">MemoryManager</a>
+    <nav aria-label="Page">
+      <a href="#how">How it works</a>
+      <a href="#trust">Your memory, your rules</a>
+      <a class="button" href="#waitlist">Join the waitlist</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="hero">
+      <div>
+        <p class="eyebrow">Personal memory for people who use more than one AI</p>
+        <h1>One memory for every AI you use.</h1>
+        <p class="subhead">Your best thinking is scattered across chats in ChatGPT, Claude, Gemini and the rest, and every new chat starts from zero. MemoryManager keeps one memory of you, outside any single AI. It mirrors how you think, so every tool starts with your context.</p>
+        <div class="hero-actions">
+          <a class="button" href="#waitlist">Join the waitlist</a>
+          <a class="text-link" href="#how">See how it works ↓</a>
+        </div>
+      </div>
+
+      <figure class="memory" aria-label="Example memory card">
+        <div class="memory-head">Your memory</div>
+        <ul>
+          <li>
+            <span class="kind">Preference</span>
+            <span class="statement">Likes answers short, with code first and no preamble.</span>
+            <span class="meta">from ChatGPT · Sep 30</span>
+          </li>
+          <li>
+            <span class="kind">Project</span>
+            <span class="statement">Rebuilding the pricing page. Launch target is mid-November.</span>
+            <span class="meta">from Claude · Oct 18</span>
+          </li>
+          <li>
+            <span class="kind">Decision</span>
+            <span class="statement">Chose Postgres over MongoDB for the side project.</span>
+            <span class="meta">from Gemini · Oct 12</span>
+          </li>
+        </ul>
+        <div class="used">↳ Used just now in a new chat in Cursor</div>
+      </figure>
+    </div>
+
+    <section id="problem" aria-labelledby="problem-h">
+      <h2 id="problem-h">Your context is scattered.</h2>
+      <div class="cards">
+        <div class="card">
+          <h3>Split across tools.</h3>
+          <p>Your best thinking lives in dozens of chats in four different apps, and none of them talk to each other.</p>
+        </div>
+        <div class="card">
+          <h3>Every new chat starts from zero.</h3>
+          <p>The AI doesn't know your project, your preferences or what you decided last week.</p>
+        </div>
+        <div class="card">
+          <h3>You keep re-explaining.</h3>
+          <p>The same background, pasted in again and again, before you can ask what you came to ask.</p>
+        </div>
+      </div>
+      <p class="after-cards">Built-in memory helps, but only inside the tool that has it. Switch apps and you're a stranger again.</p>
+    </section>
+
+    <section id="how" aria-labelledby="how-h">
+      <h2 id="how-h">How it works</h2>
+      <ol class="steps">
+        <li>
+          <span class="step-num" aria-hidden="true">01</span>
+          <h3>Bring it in.</h3>
+          <p>Import the chat history you already have, or save something as you go. Just say "remember this."</p>
+        </li>
+        <li>
+          <span class="step-num" aria-hidden="true">02</span>
+          <h3>Keep it in one place.</h3>
+          <p>MemoryManager organizes what matters, like your projects, preferences, decisions and the facts about you, into one memory you own. You can read and edit all of it.</p>
+        </li>
+        <li>
+          <span class="step-num" aria-hidden="true">03</span>
+          <h3>Use it everywhere.</h3>
+          <p>The AI tools you use pull in the right context when they need it, through MCP where the tool supports it. Every chat starts where you left off.</p>
+        </li>
+      </ol>
+    </section>
+
+    <section aria-labelledby="changes-h">
+      <h2 id="changes-h">What changes when your AI remembers you</h2>
+      <div class="cards">
+        <div class="card">
+          <h3>Better context.</h3>
+          <p>Answers fit your project, your stack and your style, because the AI already knows them.</p>
+        </div>
+        <div class="card">
+          <h3>More accurate answers.</h3>
+          <p>Less guessing at what you meant, and fewer confident answers to the wrong question.</p>
+        </div>
+        <div class="card">
+          <h3>Less re-explaining.</h3>
+          <p>Skip the preamble. Shorter prompts mean fewer tokens spent setting the scene.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="trust" aria-labelledby="trust-h">
+      <h2 id="trust-h">Your memory, your rules.</h2>
+      <p class="section-intro">It's a memory of you, so you're in charge of it.</p>
+      <ul class="rules">
+        <li><h3>You own it.</h3><p>Your memory belongs to you, not to any AI vendor.</p></li>
+        <li><h3>See everything.</h3><p>Every memory shows what it says, where it came from and when. Nothing hidden.</p></li>
+        <li><h3>Edit or delete anything.</h3><p>Fix what's wrong. Remove what you don't want remembered, any time.</p></li>
+        <li><h3>Export any time.</h3><p>Take your whole memory with you whenever you want.</p></li>
+      </ul>
+    </section>
+
+    <section class="works" aria-labelledby="works-h">
+      <h2 id="works-h">Designed to work with the AI tools you already use</h2>
+      <ul class="chips">
+        <li>ChatGPT</li>
+        <li>Claude</li>
+        <li>Gemini</li>
+        <li>Copilot</li>
+        <li>Cursor</li>
+      </ul>
+      <p class="fineprint">Connects through MCP where the tool supports it. Product names are trademarks of their owners. MemoryManager isn't affiliated with or endorsed by them.</p>
+    </section>
+
+    <section id="waitlist" class="band" aria-labelledby="waitlist-h">
+      <div class="band-inner">
+        <h2 id="waitlist-h">Be among the first to try it.</h2>
+        <p>MemoryManager is in early development. Join the waitlist and we'll reach out when there's something to try.</p>
+        <!-- TODO: connect waitlist endpoint; remove the preview caption and notice -->
+        <form id="waitlist-form" novalidate>
+          <label for="waitlist-email">Email</label>
+          <div class="field">
+            <input id="waitlist-email" name="email" type="email" autocomplete="email" placeholder="you@example.com">
+            <button class="button" type="submit" id="waitlist-submit">Join the waitlist</button>
+          </div>
+          <p class="caption">Preview only: sign-up isn't connected yet, so this form doesn't send or store anything.</p>
+          <p class="notice" id="waitlist-notice" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>MemoryManager (working name) · © 2026</span>
+    <span>Product names mentioned are trademarks of their respective owners.</span>
+  </footer>
+</div>
+
+<script>
+  // Sign-up isn't live: send nothing, store nothing, and say so. Never show a success message.
+  document.getElementById("waitlist-form").addEventListener("submit", function (event) {
+    event.preventDefault();
+    document.getElementById("waitlist-notice").textContent = "Sign-up isn't live yet. Nothing was sent or saved.";
+  });
+</script>

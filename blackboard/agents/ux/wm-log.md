@@ -89,3 +89,26 @@ Re @devops 12:36:55 ask (b1 vs b2), ux input for @pm: lean b1 (median daily acti
 
 ### 2026-10-24T13:03:55-0700 · ux · obs
 Stopped (re @pm 13:00:38 STOP WORK). Nothing half-written; I was idle. Docs stay DRAFT: docs/ux/flows.md (v2: Flows 0-4 plus 2b re-review, decisions table through pm 12:39:30 incl. the vendor-memory footer) and docs/ux/task-design.md (W1-W4 workflow options, 4 matched instances plus the stale task last). No work in progress and no open claims besides those two docs. Waiting for the PM update.
+
+### 2026-10-24T14:32:57-0700 · ux · claim
+Taking the landing page (re @pm 14:29:46 OPEN TASK, using the CORRECTED brief of 14:30:29: the original personal multi-AI memory product, not the governed team version). ux owns copy and look and will build it: a single static HTML page at docs/ux/landing/index.html, plus a private preview link. No stats, testimonials, logos, vendor partnership, Fidelity/Raj or certification claims. The waitlist form is a visible placeholder with no fake success message. Will post done for @pm review; no commit.
+
+### 2026-10-24T14:33:05-0700 · ux · reply
+Re @dev 14:32:55 claim (landing page): yours is earlier, so I'm releasing my build claim from just after it. Dev builds the HTML. I'm taking copy and visual direction as a separate file: docs/ux/landing/copy.md, with every headline, section and microcopy line, plus the look (type, color, layout, the one hero visual). ETA ~15 min. Please build the structure now and drop the copy in when it lands, rather than writing your own. I'll review the built page against the brief before @pm does.
+
+### 2026-10-24T14:34:44-0700 · ux · done
+Landing page copy and visual direction at docs/ux/landing/copy.md (DRAFT, re @dev 14:32:55 and @pm 14:30:29). @dev: please use the text exactly. It includes metadata, every section, an HTML/CSS memory-card hero visual (three memories from ChatGPT/Claude/Gemini, each with source and date, 'used just now in Cursor'), and a waitlist that says 'preview only' with an honest 'Sign-up isn't live yet. Nothing was sent or saved.' on submit (no localStorage, no success message). Visual direction: Newsreader + Inter + JetBrains Mono, warm paper and ink with one deep-teal accent, light and dark tokens, no gradients, brains, robots or logos. Ask me for shorter lines rather than rewriting. I'll review the built page against the brief's hard rules before @pm does; post the path when it's ready.
+
+### 2026-10-24T14:34:51-0700 · ux · reply
+Re @qa 14:33:56 claim (landing QA): to avoid overlap, my review covers fidelity to copy.md and the visual direction. Hard rules, a11y and mobile are yours. One deliberate exception to your check (3): docs/ux/landing/copy.md allows Google Fonts (Newsreader, Inter, JetBrains Mono) as the ONLY external request. No scripts, trackers or other hosts. If you or @pm would rather it make zero external requests, the fallback is system fonts (Georgia / system-ui / ui-monospace), and I'm fine with that. Say which.
+
+### 2026-10-24T14:40:44-0700 · ux · ask
+@dev landing page: ux copy-fidelity and visual review of site/index.html (14:37:20). The copy matches copy.md word for word, and both themes match the visual direction at 1280px and at a true 375px. Nice build. Please apply QA's 3 fixes (14:40:09) and these 3 ux changes in ONE pass, so we don't both edit the file. copy.md is already updated.
+(a) Card "Example" tag, visible. Replace the memory-head div with: <div class="memory-head"><span>Your memory</span><span class="example-tag">Example</span></div>
+CSS: .memory-head{display:flex;justify-content:space-between;align-items:center;gap:12px} .example-tag{font:500 0.68rem/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:4px 8px}
+(b) Copy, per @qa's note, which I accept: "lives in dozens of chats in four different apps" -> "lives in chats across several different apps".
+(c) Mobile header: at 375px it wraps to 3 rows. Add: @media (max-width:520px){.top{flex-wrap:nowrap}.top nav a:not(.button){display:none}}. The hero's "See how it works" link still covers navigation.
+Your two builder calls are accepted: the rounded waitlist panel inside the content width, and no `required` on the field. Ping me when it's republished and I'll re-render both themes at both widths.
+
+### 2026-10-24T14:40:44-0700 · ux · reply
+Re @qa 14:40:09 reply (copy note): accepted, 'four different apps' becomes 'several different apps'. The visible 'Example' tag on the hero card is also in. Both are in docs/ux/landing/copy.md and in my ask to @dev, bundled with your fixes 1-3 so dev does one pass. I agree with all three of your fixes. Fix 1 (drop name="email") is the important one, because the 'doesn't send anything' caption has to be true with JS off.
