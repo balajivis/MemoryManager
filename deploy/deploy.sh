@@ -5,7 +5,7 @@
 #   deploy/deploy.sh check  <ref>      validate <ref>'s server config on the VM; installs nothing (any ref)
 #   deploy/deploy.sh server <commit>   install deploy/ config from <commit> (must be merged into origin/main)
 #   deploy/deploy.sh site   <commit>   publish site/ from <commit> (must be merged into origin/main)
-#   deploy/deploy.sh tls               get the Let's Encrypt cert, then switch nginx to HTTPS
+#   deploy/deploy.sh tls               get the Let's Encrypt cert (works even while Cloudflare proxies)
 #   deploy/deploy.sh status            show what's deployed
 #
 # DEPLOY_HOST and DEPLOY_KEY override the target.
@@ -27,6 +27,15 @@ require_merged() {  # deploys only ever come from main (docs/process/release-pro
   git -C "$REPO" fetch --quiet origin main
   git -C "$REPO" merge-base --is-ancestor "$1" origin/main \
     || die "$(git -C "$REPO" rev-parse --short "$1") is not merged into origin/main; deploys only come from main"
+}
+
+guard_https() {  # an HTTPS vhost behind Cloudflare's Flexible proxy would redirect-loop
+  vm "test -f /etc/letsencrypt/live/$DOMAIN/fullchain.pem" || return 0   # no cert yet: HTTP vhost, always safe
+  local ip="${HOST#*@}"
+  dig +short "$DOMAIN" A | grep -qx "$ip" && return 0
+  [ "${ALLOW_PROXIED:-}" = 1 ] && { echo "deploy: ALLOW_PROXIED=1, installing HTTPS vhost anyway"; return 0; }
+  die "a cert exists, so this install switches to HTTPS, but $DOMAIN resolves to $(dig +short "$DOMAIN" A | tr '\n' ' ')not $ip.
+That's Cloudflare's proxy; an origin HTTPS redirect behind it loops. Set the record to DNS only first."
 }
 
 ship_tree() {  # ship_tree <commit> <path-in-repo> <remote-dir>
@@ -139,7 +148,7 @@ case "$cmd" in
   check|server)
     [ -n "${1:-}" ] || die "usage: deploy.sh $cmd <commit>"
     c="$(resolve "$1")"; short="${c:0:7}"
-    [ "$cmd" = server ] && require_merged "$c"
+    [ "$cmd" = server ] && { require_merged "$c"; guard_https; }
     ship_tree "$c" deploy "/tmp/mm-deploy-$short"
     mode=check; [ "$cmd" = server ] && mode=install
     vm "bash -s -- /tmp/mm-deploy-$short $mode $short $DOMAIN" <<< "$REMOTE_SERVER"
@@ -156,7 +165,7 @@ case "$cmd" in
     [ -n "$last" ] || die "deploy the server config first (deploy.sh server <commit>)"
     vm "sudo certbot certonly --webroot -w /var/www/letsencrypt -d $DOMAIN --non-interactive --agree-tos \
           --register-unsafely-without-email --deploy-hook 'systemctl reload nginx'"
-    "$0" server "$last"   # re-install the same commit; the vhost switches to HTTPS now that the cert exists
+    echo "cert issued. Once $DOMAIN is DNS only (resolves to ${HOST#*@}), run: deploy/deploy.sh server $last"
     ;;
   status)
     vm "echo '--- server'; tail -n 3 /etc/nginx/DEPLOYS 2>/dev/null; echo '--- site'; tail -n 3 /var/www/memorymanager/DEPLOYS; echo \"current -> \$(readlink /var/www/memorymanager/current)\""

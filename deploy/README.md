@@ -21,7 +21,7 @@ Owner: devops. Follows the [release process](../docs/process/release-process.md)
 deploy/deploy.sh check  <ref>      # validate a ref's config on the VM (nginx -t, logrotate -d); installs nothing
 deploy/deploy.sh server <commit>   # install config; refuses commits not merged into origin/main
 deploy/deploy.sh site   <commit>   # publish site/ as releases/<commit>, atomic symlink switch, keeps 5
-deploy/deploy.sh tls               # Let's Encrypt cert (webroot), then switch the vhost to HTTPS
+deploy/deploy.sh tls               # Let's Encrypt cert (webroot); then `server` switches to HTTPS once DNS is DNS only
 deploy/deploy.sh status            # what's live
 ```
 
