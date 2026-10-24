@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+# bb — file-based blackboard for peer agents.
+#
+#   bb register <name> "<role>"     claim a name, create agents/<name>/wm-log.md
+#   bb log <name> <kind> "<text>"   append an entry to your own wm-log ("-" reads text from stdin)
+#   bb read <name> [--all]          print entries from other agents since your last read
+#   bb who                          list registered agents and when each last read
+#
+# Each agent writes only its own log; everyone reads everyone. BB_DIR overrides the location.
+set -euo pipefail
+
+BB="${BB_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
+AGENTS="$BB/agents"
+REGISTRY="$BB/registry.md"
+MAX_ENTRY=24000
+
+die() { echo "bb: $*" >&2; exit 1; }
+now() { date '+%Y-%m-%dT%H:%M:%S%z'; }
+
+check_name() {
+  [[ "${1:-}" =~ ^[a-z0-9][a-z0-9-]*$ ]] || die "name must be lowercase letters, digits, dashes: '${1:-}'"
+}
+
+require_agent() {
+  check_name "$1"
+  [ -f "$AGENTS/$1/wm-log.md" ] || die "'$1' is not registered (bb register $1 \"<role>\")"
+}
+
+cmd_register() {
+  local name="${1:-}" role="${2:-}"
+  check_name "$name"
+  [ -n "$role" ] || die "usage: bb register <name> \"<role>\""
+  [[ "$role" != *$'\n'* && "$role" != *$'\r'* ]] || die "role must be a single line"
+  mkdir -p "$AGENTS"
+  # mkdir is atomic, so two agents can't claim the same name
+  mkdir "$AGENTS/$name" 2>/dev/null || die "name '$name' is taken (bb who)"
+  printf '# wm-log · %s\nrole: %s\ncwd: %s\nregistered: %s\n' "$name" "$role" "$PWD" "$(now)" > "$AGENTS/$name/wm-log.md"
+  [ -f "$REGISTRY" ] || printf '# Registry\n\n| name | role | cwd | registered |\n|---|---|---|---|\n' > "$REGISTRY"
+  printf '| %s | %s | %s | %s |\n' "$name" "${role//|/\\|}" "${PWD//|/\\|}" "$(now)" >> "$REGISTRY"
+  echo "registered '$name' → $AGENTS/$name/wm-log.md"
+}
+
+cmd_log() {
+  local name="${1:-}" kind="${2:-}" text="${3:-}"
+  require_agent "$name"
+  case "$kind" in
+    obs|claim|done|ask|reply|warn) ;;
+    *) die "usage: bb log <name> <obs|claim|done|ask|reply|warn> \"<text>\"" ;;
+  esac
+  [ "$text" = "-" ] && text="$(cat)"
+  [ -n "$text" ] || die "empty entry"
+  # escape body lines that look like an entry header, so a quote can't pose as another agent's entry
+  text="$(sed -E 's/^([[:space:]]*)###/\1\\###/' <<< "$text")"
+  # printf writes an entry this size in one write(), so concurrent readers never see half of it
+  # (QA saw entries of 65KB+ land in pieces). Count bytes: ${#text} counts chars in a UTF-8 locale
+  local bytes
+  bytes="$(printf '%s' "$text" | wc -c | tr -d ' ')"
+  [ "$bytes" -le "$MAX_ENTRY" ] || die "entry is $bytes bytes (max $MAX_ENTRY); split it, or put details in a file and link it"
+  printf '\n### %s · %s · %s\n%s\n' "$(now)" "$name" "$kind" "$text" >> "$AGENTS/$name/wm-log.md"
+}
+
+cmd_read() {
+  local me="${1:-}" all="${2:-}"
+  require_agent "$me"
+  local cursors="$AGENTS/$me/.cursors" out="" d other f size off
+  # global, not local, so the EXIT trap can still see it if we die mid-read
+  tmp="$(mktemp "$AGENTS/$me/.cursors.XXXXXX")"
+  trap 'rm -f "$tmp"' EXIT
+  for d in "$AGENTS"/*/; do
+    other="$(basename "$d")"
+    [ "$other" = "$me" ] && continue
+    f="$d/wm-log.md"
+    [ -f "$f" ] || continue
+    size="$(wc -c < "$f" | tr -d ' ')"
+    off=0
+    if [ "$all" != "--all" ] && [ -f "$cursors" ]; then
+      off="$(awk -v a="$other" '$1==a {print $2}' "$cursors")"
+      off="${off:-0}"
+    fi
+    [[ "$off" =~ ^[0-9]+$ ]] || off=0   # corrupt cursor: re-read rather than skip
+    [ "$off" -gt "$size" ] && off=0     # log was truncated/recreated
+    if [ "$size" -gt "$off" ]; then
+      # cap at $size so a write landing mid-read is picked up next time, not split;
+      # head stopping early SIGPIPEs tail, which is expected, so drop pipefail here
+      out+="$(set +o pipefail; tail -c +"$((off + 1))" "$f" | head -c "$((size - off))")"$'\n'
+    fi
+    echo "$other $size" >> "$tmp"
+  done
+  mv "$tmp" "$cursors"   # also serves as this agent's last-seen heartbeat
+  if [ -z "$out" ]; then
+    echo "(nothing new)"
+  else
+    printf '%s' "$out"
+    if grep -qE "@$me([^a-z0-9-]|$)" <<< "$out"; then echo; echo "→ new entries mention @$me"; fi
+  fi
+}
+
+cmd_who() {
+  [ -f "$REGISTRY" ] || { echo "(no agents registered)"; return; }
+  cat "$REGISTRY"
+  echo
+  local d name
+  for d in "$AGENTS"/*/; do
+    name="$(basename "$d")"
+    if [ -f "$d/.cursors" ]; then
+      echo "$name  last read $(date -r "$d/.cursors" '+%Y-%m-%d %H:%M:%S')"
+    else
+      echo "$name  has not read yet"
+    fi
+  done
+}
+
+case "${1:-}" in
+  register) shift; cmd_register "$@" ;;
+  log)      shift; cmd_log "$@" ;;
+  read)     shift; cmd_read "$@" ;;
+  who)      shift; cmd_who ;;
+  *)        sed -n '2,9p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 1 ;;
+esac

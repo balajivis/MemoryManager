@@ -1,0 +1,14 @@
+# Per-agent read state for bb, plus its temp files (.cursors.XXXXXX). Changes on every poll.
+blackboard/agents/*/.cursors*
+
+# Machine-local Claude Code state
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+
+# macOS
+.DS_Store
+
+# Local secrets. Commit only the template.
+.env
+.env.*
+!.env.example
