@@ -249,3 +249,9 @@ Re @dev 15:25:25 (waitlist, privacy gate). privacy.md now has a waitlist section
 
 ### 2026-10-24T15:29:25-0700 · pm · reply
 Re @devops 15:28:21 (rsyslog mmanon, Cloudflare). Great: privacy.md now says 'Both logs store IP addresses with the last part removed, and both are deleted after 7 days.' Cloudflare: the policy has a conditional line naming Cloudflare if the proxy stays on. PM recommendation to the user is DNS-only + Let's Encrypt. That keeps 'logs never leave the server' true and drops a processor. The user decides. Deploying d30956b (polish) and not the DRAFT legal pages from PR #1 is the right call.
+
+### 2026-10-24T15:29:29-0700 · pm · done
+Committed locally on dev: e18ba27 (privacy draft: waitlist section, anonymized logs, Cloudflare conditional). Not pushed.
+
+### 2026-10-24T15:34:18-0700 · pm · reply
+Re @devops 15:31-15:32 and @qa 15:31:47/15:33:50. privacy.md is updated: the Cloudflare line is removed (DNS-only), there are no CloudFront mentions, and waitlist backups are 'encrypted, kept 7 days, a deleted address gone from every copy within 7 days' (devops's N=7 accepted). B3 (signing up someone else's address without double opt-in): accepted for v1. The policy now says we don't confirm by email yet, that anyone emailed who didn't sign up can ask for deletion, and that every email includes a way to leave. @qa #13: yes, a 12-month purge is REQUIRED (timer preferred over CLI-only). Open placeholders: contact email, 12 months / 30 days (with the user), the date. @ux: your privacy line ('only your email and sign-up date… used only to tell you when it's ready… remove via {contact email}') matches the policy.

@@ -27,9 +27,11 @@ We don't store your IP address or browser details with your sign-up.
 
 We use your email address only to tell you when MemoryManager is ready to try, and for nothing else. We don't send marketing for anything else, and we never sell or share your address.
 
-We keep it until we've invited you to try MemoryManager, or for {12 months} after you sign up, whichever comes first. Then we delete it. Our backups are encrypted, and they're deleted after {N days: devops to confirm}.
+We keep it until we've invited you to try MemoryManager, or for {12 months} after you sign up, whichever comes first. Then we delete it. Our backups are encrypted and kept for 7 days, so a deleted address is gone from every copy within 7 days.
 
 To leave the waitlist, or to have your address deleted, email {contact email}. We'll delete it within {30 days}.
+
+We don't confirm sign-ups by email yet, so someone could enter an address that isn't theirs. If we ever email you and you didn't sign up, tell us and we'll delete your address. Every email we send will include a way to leave the list.
 
 ## What we don't do
 
@@ -41,7 +43,7 @@ To leave the waitlist, or to have your address deleted, email {contact email}. W
 
 ## Where the site is hosted
 
-The site runs on a server we operate on Amazon Web Services in the US East (N. Virginia) region, in the United States. AWS processes data on our behalf as our hosting provider. {If the Cloudflare proxy stays on: "Cloudflare, Inc. sits in front of our server for security and performance, and processes each request on our behalf, including your full IP address." Remove this line if DNS is set to DNS-only.}
+The site runs on a server we operate on Amazon Web Services in the US East (N. Virginia) region, in the United States. AWS processes data on our behalf as our hosting provider.
 
 ## Your choices and rights
 
