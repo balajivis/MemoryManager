@@ -169,6 +169,46 @@ A teal rounded square with a paper-colored serif "M", matching `--accent` and `-
 - **Builder note:** this page is served at any missing path (e.g. `/a/b/c`), so every URL in it must be **root-absolute**: `/fonts/fonts.css`, `/`. Relative `fonts/fonts.css` would break on nested paths.
 - **@devops:** in nginx, `error_page 404 /404.html;` with `location = /404.html { internal; }`. The status must stay 404, not 200.
 
+## 13. Legal pages and footer links  [re @pm 15:10:06; content owned by @pm in docs/pm/legal/]
+
+### Footer (index.html, 404.html, privacy.html, terms.html)
+
+Add the links to the first footer line. Don't create a new block:
+
+```
+MemoryManager (working name) · © 2026 · Privacy · Terms
+Product names mentioned are trademarks of their respective owners.
+```
+
+- Links: `/privacy.html` and `/terms.html` (root-absolute). Color `--muted`, **always underlined**, so they aren't marked by color alone. `--ink` on hover.
+- On its own page, the link gets `aria-current="page"` and no underline.
+- On mobile it wraps naturally. Keep the separators on the same line as the link that follows them.
+
+### Privacy and Terms pages
+
+A plain, readable document, styled like the 404 page, with no cards and no decoration.
+
+- **Header:** the wordmark linking to `/`, and on the right a quiet text link "← Back to MemoryManager". No nav and no waitlist button.
+- **Column:** one centered reading column, `max-width: 68ch` (about 680px), with the 16px side gutter on mobile.
+- **Title block:**
+  - H1 in Newsreader, about 44px on desktop and 34px on mobile, e.g. **Privacy policy** / **Terms of use**.
+  - A meta line under it in mono `--muted`: `Last updated {date}`.
+  - **While it's a draft**, a note box under the meta line with an `--accent-tint` background, 8px radius and `--ink` text: **Draft:** this page hasn't been reviewed by a lawyer yet and isn't final. Remove it when @pm says the text is final.
+- **Body:** Inter, 17px, line-height 1.7, `--ink`. Paragraph spacing 1em.
+  - H2 in Newsreader, 26px, 56px above and 12px below. H3 in Inter, 600, 18px.
+  - Lists use normal bullets and 0.4em between items. Links are `--accent` and underlined.
+- **Placeholders** like `{operator legal name}`: keep them visible, styled as `<mark>` with an `--accent-tint` background and mono font, so nobody can miss an unfilled one. QA can grep for `{` before publishing.
+- No table of contents (the pages are short). No cookie banner, because there are no cookies, and a banner would suggest otherwise.
+- `<title>`: Privacy policy · MemoryManager / Terms of use · MemoryManager. Same favicon links, tokens, fonts and dark mode as index.html.
+
+### Favicon files (fixes @qa's 15:12:23 nit)
+
+Some clients ignore data-URI icons (Google Search, older Safari, iOS home screen). The real files are made from the §11 SVG and live in `docs/ux/landing/`:
+
+- `favicon.ico` (48×48) → copy to `site/favicon.ico`. Browsers request it automatically, so no tag is needed.
+- `apple-touch-icon.png` (180×180, full-bleed square because iOS rounds the corners) → copy to `site/apple-touch-icon.png` and add `<link rel="apple-touch-icon" href="/apple-touch-icon.png">` to every page.
+- Keep the inline SVG icon from §11 as well. Modern browsers prefer it.
+
 ---
 
 ## Visual direction
