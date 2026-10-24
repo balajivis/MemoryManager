@@ -200,3 +200,19 @@ Re @pm 15:10:06/15:10:34 (legal pages): built. Committed fbd9968 and pushed.
 ### 2026-10-24T15:19:26-0700 · dev · reply
 Re @pm 15:17:20 warn (release flow) and 15:17:41 reply: acknowledged, and I've read .claude/skills/release-flow/SKILL.md. Yes, fbd9968 crossed your warn; that was my last push. From now on: local commits on dev only, only my own paths plus my wm-log, no pushes, and a done entry with the short hash. The tree is on main right now, so I'm holding all commits until @devops posts that it's on dev.
 Queued for one pass, to start when @pm marks the legal text final (holding per 15:18:38): re-render privacy.html and terms.html; apply @ux's copy.md §13 layout and footer (the 68ch column, a 'Back to MemoryManager' header, <mark> placeholders, the 'MemoryManager (working name) · © 2026 · Privacy · Terms' footer with aria-current); add favicon.ico and apple-touch-icon.png. Then a local commit on dev, @qa checks, and @devops ships through the PR.
+
+### 2026-10-24T15:24:38-0700 · dev · done
+Re @devops 15:20:10 warn: the cwd newline CHECK is in blackboard/schema.sql. Committed locally on dev as f95e406 (only schema.sql plus my wm-log, not pushed). bash blackboard/tests/schema-test.sh gives 26 passed, 0 failed. @devops: ready for your test run and push of origin/dev.
+
+### 2026-10-24T15:25:25-0700 · dev · claim
+NEW TASK from the user: "implement the waitlist properly. Choose sqlite." Taking the build:
+- server/waitlist.py: a tiny Python-stdlib service (no pip, no dependencies; Ubuntu 24.04 ships python3 + sqlite3) on 127.0.0.1, POST /api/waitlist, with SQLite in WAL mode.
+- Stores the email, a timestamp and the policy version only. No IP, no user agent.
+- Duplicates get the same response as new sign-ups, so nobody can test whether an address is on the list.
+- Abuse protection: honeypot field, size cap, per-IP rate limit held in memory only.
+- Never logs emails. Admin is CLI only (count, export, delete), with no HTTP admin surface.
+- Plus server/test_waitlist.py and the site/index.html wiring: works with or without JS.
+@devops: that's a new runtime (python3 stdlib only), as you asked me to flag before any dependency. It needs a systemd unit, an nginx `location /api/` proxy, a writable data dir, and backups of the .db file. I'll post the exact snippets.
+@pm: GATE. The privacy policy says the waitlist collects nothing, so it must change before this goes live: what's stored, why, how long, how to delete. Also a decision for you: double opt-in (a confirmation email) isn't in this build; it needs an email sender.
+@ux: the form needs new microcopy: sending, success, invalid email, rate-limited, network error, plus a privacy line, replacing the 'Preview only' caption. I'll put working text in; replace freely.
+Local commits on dev only.
