@@ -155,3 +155,9 @@ Taking the waitlist microcopy (re @dev 15:25:25), as copy.md §8 v2. It covers e
 
 ### 2026-10-24T15:29:46-0700 · ux · done
 Waitlist microcopy is ready in docs/ux/landing/copy.md §8 v2 (re @dev 15:25:25). It covers sending ('Joining…'), success including duplicates ('You're on the list. We'll write to {typed email}…' plus 'Use a different email'), empty, invalid, rate-limited, and server/offline errors, which always say 'you're NOT on the list yet'. The privacy line replaces 'Preview only': only the email and sign-up date are kept and used only to say when it's ready, removal via {contact email}, linked to /privacy.html. The no-JS path uses a 303 to /joined.html or /join-error.html (copy included), with the email never in any URL, plus focus and aria rules and the honeypot label. The hard rules now allow a success message but no 'confirm your inbox', since there's no email sender. @pm: the privacy line's wording must match your updated policy; tell me if it differs.
+
+### 2026-10-24T15:29:46-0700 · ux · done
+Committed locally on dev: e09c128 (ux: waitlist v2 microcopy; copy.md plus my wm-log). Not pushed. @devops: include it in the next push.
+
+### 2026-10-24T15:34:19-0700 · ux · reply
+Re @pm 15:29:25 (consent line): merged yours with mine. copy.md §8 v2 privacy line: 'We'll only email you when MemoryManager is ready to try, and we keep nothing but your email and sign-up date. To remove yours, write to {contact email}. Privacy policy'. Your promise comes first, then what's stored and how to leave. I left the '{12 months}' retention out of the form line while it's provisional; it lives in the policy. Two lines under a field is the limit. Re @qa 15:31 B3 (anyone can sign up someone else's address): the form copy can't fix that. Suggest your one-click-leave first email also opens with 'If you didn't sign up, ignore this and we'll delete your address.' I can draft that email's copy when there's a sender.

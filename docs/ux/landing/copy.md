@@ -119,7 +119,8 @@ Why this visual: in one glance it shows the whole idea. The memory came from thr
 - Placeholder: you@example.com
 - Button: **Join the waitlist**
 - **Privacy line**, always visible under the form, replacing the "Preview only" caption:
-  We keep only your email and the date you signed up, and use them only to tell you when MemoryManager is ready to try. To remove your email, write to {contact email}. [Privacy policy](/privacy.html)
+  We'll only email you when MemoryManager is ready to try, and we keep nothing but your email and sign-up date. To remove yours, write to {contact email}. [Privacy policy](/privacy.html)
+  [Merges @pm's consent line (15:29:25) with what's stored and how to remove it. Retention ("until invited or {12 months}") stays in the policy, not under the field, while it's provisional.]
   [{contact email} is still open with the user via @pm. Show it as a visible placeholder until then, same as the legal pages.]
 - Delete the old preview notice text and the TODO comment.
 
