@@ -14,7 +14,7 @@ Dev: use this text exactly. If something doesn't fit the layout, ask @ux for a s
 - No wording that implies partnership with or endorsement by an AI vendor. Use "designed to work with", never "partners", "integrates with" (as a present fact) or "official".
 - No security, privacy-certification or compliance claims: no "encrypted", "secure", "private by design", "SOC 2" or "GDPR-compliant".
 - Never mention Fidelity or Raj.
-- The waitlist form doesn't send anything, and the page must say so. It never shows a success message.
+- **Waitlist (v2, real sign-up):** promise only what's built. A success message is allowed now, but no "check your inbox to confirm" (there's no confirmation email), no "early access guaranteed", and no dates. Errors must say plainly whether the person is on the list or not. **The real form goes live only when @pm's updated privacy policy goes live with it** (dev's gate, 15:25:25).
 - Name: **MemoryManager**, a working name.
 
 ---
@@ -108,17 +108,39 @@ Why this visual: in one glance it shows the whole idea. The memory came from thr
 - Plain-text list, styled as quiet chips, never logos: ChatGPT · Claude · Gemini · Copilot · Cursor
 - Fine print under it: Connects through MCP where the tool supports it. Product names are trademarks of their owners. MemoryManager isn't affiliated with or endorsed by them.
 
-## 8. Waitlist  [id="waitlist"]
+## 8. Waitlist  [id="waitlist"]  · v2, real sign-up (re @dev 15:25:25)
 
+**Section text** (unchanged):
 - **H2: Be among the first to try it.**
 - Text: MemoryManager is in early development. Join the waitlist and we'll reach out when there's something to try.
-- Form:
-  - Label (visible): Email
-  - Placeholder: you@example.com
-  - Button: **Join the waitlist**
-  - Caption, always visible under the form: Preview only: sign-up isn't connected yet, so this form doesn't send or store anything.
-- On submit: prevent the default, send nothing, store nothing (no localStorage), and show this inline in a polite live region (`aria-live="polite"`): **Sign-up isn't live yet. Nothing was sent or saved.** Never show a "you're on the list" message.
-- [HTML comment for later: `<!-- TODO: connect waitlist endpoint; remove the preview caption and notice -->`]
+
+**Form:**
+- Label (visible): Email
+- Placeholder: you@example.com
+- Button: **Join the waitlist**
+- **Privacy line**, always visible under the form, replacing the "Preview only" caption:
+  We keep only your email and the date you signed up, and use them only to tell you when MemoryManager is ready to try. To remove your email, write to {contact email}. [Privacy policy](/privacy.html)
+  [{contact email} is still open with the user via @pm. Show it as a visible placeholder until then, same as the legal pages.]
+- Delete the old preview notice text and the TODO comment.
+
+**States** (with JS). Messages go in the polite live region under the form. Errors are also tied to the field with `aria-describedby`, plus `aria-invalid="true"` while they show.
+
+| State | What the person sees |
+|---|---|
+| Sending | The button reads **Joining…** and is disabled; `aria-busy="true"` on the form |
+| Success, including duplicates (the server answers the same either way, on purpose) | The form is replaced by: **You're on the list.** We'll write to *{the email they typed}* when there's something to try. *Showing the address back lets people catch a typo. It's only shown in their own browser.* Then a small text button: **Use a different email** (brings the empty form back) |
+| Empty field | Enter your email address to join. |
+| Invalid email (checked in the browser or by the server) | That doesn't look like an email address. Check it and try again. |
+| Rate-limited (429) | Too many tries from your connection. Wait a few minutes, then try again. |
+| Server error or no network (5xx, timeout, offline) | Something went wrong, so you're **not** on the list yet. Please try again in a moment. |
+
+Rules: keep what they typed after any error. Move focus to the field on an error, and to the success message on success. Never show success unless the server said so.
+
+**Without JS:** the form POSTs to `/api/waitlist` with the email in the **body only**, never in a URL (devops 15:28:21 a). The server answers with a 303 redirect to a static page. **No email or token goes in the redirect URL.** The pages use the 404.html style, with `noindex`, root-absolute URLs, the same footer, and a "Back to MemoryManager" button:
+- `/joined.html`: title "You're on the list · MemoryManager". H1 **You're on the list.** Text: We'll write to you when there's something to try. Then the same privacy line as above.
+- `/join-error.html`: title "Sign-up didn't work · MemoryManager". H1 **That didn't work.** Text: You're not on the list yet. Check your email address and try again. Button: **Back to the sign-up form** → `/#waitlist`. (Rate limits and server errors land here too. One page keeps it simple; it doesn't need the detail the JS states have.)
+
+**Honeypot field:** hide it visually and from assistive tech (`aria-hidden="true"`, `tabindex="-1"`, `autocomplete="off"`), with the label "Leave this field empty". If it's filled, the server responds as a normal success and stores nothing.
 
 ## 9. Footer
 
