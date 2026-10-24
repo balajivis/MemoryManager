@@ -165,7 +165,8 @@
   .success { width: 100%; display: grid; gap: 8px; justify-items: center; background: var(--accent-tint); border-radius: 12px; padding: 18px 20px; }
   .success:focus { outline: none; }
   .success:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-  #waitlist-success-email { font-weight: 600; word-break: break-all; }
+  #waitlist-success-email { font-weight: 600; display: inline-block; max-width: 100%; overflow-wrap: anywhere; }
+  input[type="email"][aria-invalid="true"] { border-color: var(--ink); }
   .link-button { font: 500 0.95rem/1 var(--sans); color: var(--accent); background: none; border: 0; padding: 6px; text-decoration: underline; cursor: pointer; }
   .hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
   .notice:empty { padding: 0; }
@@ -416,7 +417,11 @@
         body: JSON.stringify({ email: address, website: website.value }),
         signal: controller && controller.signal
       })
-        .then(function (response) { return response.json(); })
+        .then(function (response) {
+          // nginx's own rate limit answers 429 with an HTML page, so don't try to parse it
+          if (response.status === 429) { return { ok: false, result: "rate_limited" }; }
+          return response.json();
+        })
         .then(function (data) {
           if (data && data.ok === true) { showSuccess(address); } else { showError(data && data.result); }
         })
