@@ -49,8 +49,17 @@ for f in "$src/nginx/sites/default.conf" "$site"; do
   sed "s#/etc/nginx/snippets/memorymanager-site.conf#$src/nginx/snippets/memorymanager-site.conf#" "$f" > "$t/sites-enabled/$(basename "$f")"
 done
 sudo nginx -t -q -c "$t/nginx.conf" || { echo "candidate config FAILED nginx -t"; exit 1; }
+if [ ! -f "$cert" ]; then   # also prove the HTTPS vhost parses, using a throwaway self-signed cert
+  openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj "/CN=$domain" -keyout "$t/k.pem" -out "$t/c.pem" 2>/dev/null
+  rm -f "$t/sites-enabled/"*.conf
+  cp "$src/nginx/sites/default.conf" "$t/sites-enabled/default.conf"
+  sed -e "s#/etc/nginx/snippets/memorymanager-site.conf#$src/nginx/snippets/memorymanager-site.conf#" \
+      -e "s#/etc/letsencrypt/live/$domain/fullchain.pem#$t/c.pem#" -e "s#/etc/letsencrypt/live/$domain/privkey.pem#$t/k.pem#" \
+      "$src/nginx/sites/memorymanager-https.conf" > "$t/sites-enabled/https.conf"
+  sudo nginx -t -q -c "$t/nginx.conf" || { echo "candidate HTTPS vhost FAILED nginx -t"; exit 1; }
+fi
 sudo logrotate -d "$src/logrotate/nginx" >/dev/null 2>&1 || { echo "candidate logrotate config FAILED"; exit 1; }
-echo "candidate OK: nginx -t and logrotate -d pass (vhost: $(basename "$site"))"
+echo "candidate OK: nginx -t (HTTP and HTTPS vhosts) and logrotate -d pass; will install $(basename "$site")"
 [ "$mode" = install ] || exit 0
 
 # 2. Back up, install, re-test the live config, reload. Restore the backup on any failure.
