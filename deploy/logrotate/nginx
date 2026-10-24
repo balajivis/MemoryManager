@@ -1,0 +1,37 @@
+# nginx log rotation for dev-vm. Installed by deploy/deploy.sh to /etc/logrotate.d/nginx.
+# Daily rotation with 'rotate 6': today's file plus 6 rotated files, so no entry is kept
+# longer than 7 days (privacy policy: "deleted after 7 days"). Both logs hold anonymized
+# IPs only: nginx anonymizes the access log, rsyslog's mmanon anonymizes the error log.
+
+/var/log/nginx/*.log {
+	daily
+	missingok
+	rotate 6
+	compress
+	delaycompress
+	notifempty
+	create 0640 www-data adm
+	sharedscripts
+	prerotate
+		if [ -d /etc/logrotate.d/httpd-prerotate ]; then \
+			run-parts /etc/logrotate.d/httpd-prerotate; \
+		fi \
+	endscript
+	postrotate
+		invoke-rc.d nginx rotate >/dev/null 2>&1
+	endscript
+}
+
+/var/log/nginx-errors/*.log {
+	daily
+	missingok
+	rotate 6
+	compress
+	delaycompress
+	notifempty
+	create 0640 syslog adm
+	sharedscripts
+	postrotate
+		/usr/lib/rsyslog/rsyslog-rotate
+	endscript
+}

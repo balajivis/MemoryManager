@@ -24,7 +24,7 @@ CREATE TYPE bb.kind AS ENUM ('obs', 'claim', 'done', 'ask', 'reply', 'warn');
 CREATE TABLE bb.agents (
   name          text PRIMARY KEY CHECK (name ~ '^[a-z0-9][a-z0-9-]*$'),
   role          text NOT NULL CHECK (role <> '' AND role !~ '[\r\n]'),
-  cwd           text NOT NULL,
+  cwd           text NOT NULL CHECK (cwd !~ '[\r\n]'),
   registered_at timestamptz NOT NULL DEFAULT now(),
   last_seq      bigint NOT NULL DEFAULT 0,  -- seq of this agent's latest entry; only bb.log changes it
   last_read_at  timestamptz                 -- heartbeat; bb.read sets it
