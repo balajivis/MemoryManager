@@ -151,13 +151,14 @@ sudo mkdir -p "$base/releases"
 sudo rm -rf "$rel"; sudo mv "/tmp/mm-waitlist-$commit/server" "$rel"
 sudo chown -R root:root "$rel"; sudo find "$rel" -type d -exec chmod 755 {} +; sudo find "$rel" -type f -exec chmod 644 {} +
 sudo ln -sfn "$rel" "$base/current.new" && sudo mv -T "$base/current.new" "$base/current"
-for u in memorymanager-waitlist.service memorymanager-waitlist-backup.service memorymanager-waitlist-backup.timer; do
+for u in memorymanager-waitlist.service memorymanager-waitlist-backup.service memorymanager-waitlist-backup.timer \
+         memorymanager-waitlist-purge.service memorymanager-waitlist-purge.timer; do
   sudo install -m 644 "/tmp/mm-waitlist-$commit/systemd/$u" "/etc/systemd/system/$u"
 done
 sudo install -d /etc/systemd/system/memorymanager-waitlist.service.d
 printf "[Service]\nEnvironment=WAITLIST_POLICY_VERSION=%s\n" "$policy" | sudo tee /etc/systemd/system/memorymanager-waitlist.service.d/policy.conf >/dev/null
 sudo systemctl daemon-reload
-sudo systemctl enable --now memorymanager-waitlist-backup.timer >/dev/null
+sudo systemctl enable --now memorymanager-waitlist-backup.timer memorymanager-waitlist-purge.timer >/dev/null
 sudo systemctl enable memorymanager-waitlist.service >/dev/null
 sudo systemctl restart memorymanager-waitlist.service
 sleep 2

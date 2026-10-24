@@ -1,0 +1,22 @@
+# Daily retention purge (run by memorymanager-waitlist-purge.timer): deletes sign-ups older
+# than WAITLIST_RETENTION_DAYS (365 = the privacy policy's 12 months). Same DB and sandbox
+# as the service. Backups age out 7 days later, so purged rows leave every copy within 7 days.
+
+[Unit]
+Description=MemoryManager waitlist retention purge
+
+[Service]
+Type=oneshot
+Environment=WAITLIST_DB=/var/lib/memorymanager-waitlist/waitlist.db
+Environment=WAITLIST_RETENTION_DAYS=365
+Environment=PYTHONDONTWRITEBYTECODE=1
+DynamicUser=yes
+StateDirectory=memorymanager-waitlist
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateNetwork=yes
+ExecStart=/bin/sh -c 'test -f "$WAITLIST_DB" || exit 0; exec /usr/bin/python3 /opt/memorymanager-waitlist/current/waitlist.py purge'

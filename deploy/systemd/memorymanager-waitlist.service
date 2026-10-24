@@ -9,10 +9,10 @@ After=network.target
 
 [Service]
 ExecStart=/usr/bin/python3 /opt/memorymanager-waitlist/current/waitlist.py serve
-Environment=WAITLIST_DB=/var/lib/memorymanager/waitlist.db
+Environment=WAITLIST_DB=/var/lib/memorymanager-waitlist/waitlist.db
 Environment=PYTHONDONTWRITEBYTECODE=1
 DynamicUser=yes
-StateDirectory=memorymanager
+StateDirectory=memorymanager-waitlist
 StateDirectoryMode=0700
 UMask=0077
 NoNewPrivileges=yes

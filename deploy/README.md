@@ -14,7 +14,8 @@ Owner: devops. Follows the [release process](../docs/process/release-process.md)
 | `nginx/sites/default.conf` | `/etc/nginx/sites-available/default` | Requests by bare IP or unknown host: the test page, owner IP only |
 | `logrotate/nginx` | `/etc/logrotate.d/nginx` | Daily rotation, `rotate 6` (today plus 6 days = 7 days max) for both logs |
 | `systemd/memorymanager-waitlist.service` | `/etc/systemd/system/` | Waitlist API on 127.0.0.1:8787 (admin view on :8788, SSH tunnel only). `DynamicUser`, state in `/var/lib/memorymanager` (0700), heavily sandboxed (`systemd-analyze security`: 1.2 OK) |
-| `systemd/memorymanager-waitlist-backup.{service,timer}` | `/etc/systemd/system/` | Nightly `waitlist.py backup` into `/var/lib/memorymanager-backups` (0700), copies older than 7 days deleted |
+| `systemd/memorymanager-waitlist-backup.{service,timer}` | `/etc/systemd/system/` | Nightly `waitlist.py backup` into `/var/lib/memorymanager-waitlist-backups` (0700), copies older than 7 days deleted |
+| `systemd/memorymanager-waitlist-purge.{service,timer}` | `/etc/systemd/system/` | Daily `waitlist.py purge`: deletes sign-ups older than 365 days (policy: 12 months) |
 | `deploy.sh` | runs on your Mac | `check`, `server`, `site`, `waitlist`, `tls`, `status` |
 
 ## Using it
@@ -38,7 +39,7 @@ These back the sentences in `docs/pm/legal/privacy.md`. If you change them, upda
 - **Error log** (`/var/log/nginx-errors/error.log`): only `crit` events, with IPs anonymized the same way by rsyslog **before** anything is written. A full IP never reaches disk.
 - Both logs are deleted after 7 days (today's file plus 6 rotated files). No cookies, no analytics, nothing shipped off the box.
 - `deploy.sh server` proves the first two points after every install with a self-test using documentation addresses (198.51.100.123 must appear only as 198.51.100.0).
-- **Waitlist** (`/var/lib/memorymanager/waitlist.db`): email, sign-up time, policy version. No IP or user agent; the client IP is only an in-memory rate-limit key (nginx `limit_req` plus the service's own). nginx never logs request bodies, so emails never reach the access log.
+- **Waitlist** (`/var/lib/memorymanager-waitlist/waitlist.db`): email, sign-up time, policy version. No IP or user agent; the client IP is only an in-memory rate-limit key (nginx `limit_req` plus the service's own). nginx never logs request bodies, so emails never reach the access log.
 - **Waitlist backups:** nightly, kept 7 days, so a deleted sign-up is gone from every backup within 7 days. They live on the same VM (encrypted EBS), so they cover mistakes and corruption, not loss of the VM.
-- **Admin:** `ssh -L 8788:127.0.0.1:8788 ubuntu@13.222.77.232`, then http://localhost:8788/. CLI as the service user: `sudo systemd-run --pipe --wait -p DynamicUser=yes -p StateDirectory=memorymanager -E WAITLIST_DB=/var/lib/memorymanager/waitlist.db /usr/bin/python3 /opt/memorymanager-waitlist/current/waitlist.py count`
+- **Admin:** `ssh -L 8788:127.0.0.1:8788 ubuntu@13.222.77.232`, then http://localhost:8788/. CLI as the service user: `sudo systemd-run --pipe --wait -p DynamicUser=yes -p StateDirectory=memorymanager -E WAITLIST_DB=/var/lib/memorymanager-waitlist/waitlist.db /usr/bin/python3 /opt/memorymanager-waitlist/current/waitlist.py count`
 - If Cloudflare's proxy is on for the domain, the VM only sees Cloudflare's IPs, and Cloudflare processes visitor requests. The privacy policy must then name Cloudflare.
