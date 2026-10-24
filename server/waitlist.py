@@ -10,15 +10,17 @@ proxies /api/waitlist to it. Privacy rules this file keeps:
     can't be used to check whether someone signed up.
 
 Run the server:   python3 server/waitlist.py serve   (also starts the admin view; see admin.py)
-Operator tools:   python3 server/waitlist.py count | export | delete <email> | backup <file>
+Operator tools:   python3 server/waitlist.py count | export | delete <email> | backup <file> | purge
 
 Settings (environment variables):
-  WAITLIST_DB              SQLite file (default /var/lib/memorymanager/waitlist.db)
+  WAITLIST_DB              SQLite file (default /var/lib/memorymanager-waitlist/waitlist.db)
   WAITLIST_HOST / _PORT    listen address (default 127.0.0.1:8787)
   WAITLIST_POLICY_VERSION  privacy-policy version shown next to the form, saved
                            with each sign-up as a record of what the person saw
   WAITLIST_RATE_LIMIT      sign-up attempts allowed per client per window (default 5)
   WAITLIST_RATE_WINDOW     window length in seconds (default 600)
+  WAITLIST_RETENTION_DAYS  `purge` deletes sign-ups older than this (default 365,
+                           the privacy policy's provisional 12 months)
 """
 
 import csv
@@ -32,12 +34,13 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs
 
-DB_PATH = os.environ.get("WAITLIST_DB", "/var/lib/memorymanager/waitlist.db")
+DB_PATH = os.environ.get("WAITLIST_DB", "/var/lib/memorymanager-waitlist/waitlist.db")
 HOST = os.environ.get("WAITLIST_HOST", "127.0.0.1")
 PORT = int(os.environ.get("WAITLIST_PORT", "8787"))
 POLICY_VERSION = os.environ.get("WAITLIST_POLICY_VERSION", "draft")
 RATE_LIMIT = int(os.environ.get("WAITLIST_RATE_LIMIT", "5"))
 RATE_WINDOW = int(os.environ.get("WAITLIST_RATE_WINDOW", "600"))
+RETENTION_DAYS = int(os.environ.get("WAITLIST_RETENTION_DAYS", "365"))
 
 MAX_BODY = 2048          # bytes; a sign-up is one short field
 MAX_EMAIL = 254          # RFC 5321 path limit
@@ -89,6 +92,15 @@ def normalize_email(raw):
         return None
     local, _, domain = email.rpartition("@")
     return f"{local}@{domain.lower()}"
+
+
+def purge(days=None, path=None):
+    """Delete sign-ups older than the retention period. Returns how many were removed."""
+    cutoff = f"-{int(RETENTION_DAYS if days is None else days)} days"
+    with connect(path) as conn:
+        return conn.execute(
+            "DELETE FROM waitlist WHERE created_at < strftime('%Y-%m-%dT%H:%M:%SZ', 'now', ?)", (cutoff,)
+        ).rowcount
 
 
 def add_signup(email, path=None):
@@ -158,8 +170,10 @@ class Handler(BaseHTTPRequestHandler):
             return self.reply(400, "invalid_email", is_form)
         if fields.get(HONEYPOT):
             return self.reply(200, "joined", is_form)   # pretend success, store nothing
-        # nginx sets X-Real-IP; the address is used as a rate-limit key in memory only
-        client = self.headers.get("X-Real-IP") or self.client_address[0]
+        # The address is a rate-limit key held in memory only. X-Real-IP is trusted only
+        # from a loopback peer (nginx on this host); anyone else is keyed by their own address.
+        peer = self.client_address[0]
+        client = (self.headers.get("X-Real-IP") or peer) if peer in ("127.0.0.1", "::1") else peer
         if not self.limiter.allow(client):
             return self.reply(429, "rate_limited", is_form)
         email = normalize_email(fields.get("email"))
@@ -240,6 +254,9 @@ def main(argv):
         with connect() as src, sqlite3.connect(argv[2]) as dst:
             src.backup(dst)
         print(f"backed up to {argv[2]}")
+    elif command == "purge":
+        init_db()
+        print(f"purged {purge()} sign-ups older than {RETENTION_DAYS} days")
     elif command == "delete" and len(argv) == 3:
         init_db()
         with connect() as conn:

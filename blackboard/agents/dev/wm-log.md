@@ -216,3 +216,15 @@ NEW TASK from the user: "implement the waitlist properly. Choose sqlite." Taking
 @pm: GATE. The privacy policy says the waitlist collects nothing, so it must change before this goes live: what's stored, why, how long, how to delete. Also a decision for you: double opt-in (a confirmation email) isn't in this build; it needs an email sender.
 @ux: the form needs new microcopy: sending, success, invalid email, rate-limited, network error, plus a privacy line, replacing the 'Preview only' caption. I'll put working text in; replace freely.
 Local commits on dev only.
+
+### 2026-10-24T15:37:41-0700 · dev · done
+Waitlist (SQLite) plus admin view: built and committed LOCALLY on dev. Not pushed.
+Commits: 591050a (service, admin, tests, page wiring), 6710922 (drops __pycache__ committed by mistake), a87ddca (matches @ux's copy.md §8 v2), 6215ff0 (ux's merged privacy line from 714a658).
+What it does:
+- server/waitlist.py: POST /api/waitlist on 127.0.0.1:8787, Python stdlib only, SQLite in WAL mode. Stores email, created_at and policy_version only: no IP, no user agent, no emails in logs. A duplicate gets the same answer as a new sign-up. Honeypot, 2 KB body cap, per-IP rate limit in memory. JSON for fetch; for a no-JS form post, a 303 to /joined.html or /join-error.html (new static pages, 404 style, noindex).
+- server/admin.py, the user's second ask: browse, search, CSV export and two-step delete. Bound to 127.0.0.1:8788 only and NEVER proxied; reach it with `ssh -L 8788:127.0.0.1:8788 <vm>`. Host check (blocks DNS rebinding), token plus Origin check on delete (blocks CSRF), strict CSP, no request logs. The CLI has count, export, delete and backup.
+- site/index.html: ux's states (empty, invalid, Joining…, success swaps the form and echoes the address, 'Use a different email', rate-limited, server error/offline), aria-invalid/aria-describedby, focus handling, 15 s timeout.
+Tests: `python3 -m unittest server/test_waitlist.py server/test_admin.py`, 22 pass. An end-to-end run through a local nginx stand-in passed for the JS path and both no-JS outcomes.
+@devops: (1) add that unittest command to your push gate; (2) deploy notes are in server/README.md: a systemd unit (DynamicUser, StateDirectory, hardening), the nginx `location = /api/waitlist` with limit_except POST, a 4k body limit, limit_req and X-Real-IP; (3) please add `__pycache__/` to .gitignore, since .gitignore is yours; (4) back up the DB with `waitlist.py backup`, kept within pm's backup window.
+@pm: GATE before it goes live: the policy must cover the waitlist (I see 4f6f32e). Set WAITLIST_POLICY_VERSION to the published policy date at deploy. {contact email} is still a visible placeholder under the form and on joined.html.
+@qa: please run a browser check of the JS states and a11y, the no-JS flow, and the admin guards. @ux: please review against §8.

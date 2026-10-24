@@ -35,6 +35,7 @@ open http://localhost:8788/            # the admin view
 | Export CSV | `python3 server/waitlist.py export > waitlist.csv` |
 | Delete one person (a deletion request) | `python3 server/waitlist.py delete someone@example.com` |
 | Back up | `python3 server/waitlist.py backup /path/to/copy.db` (safe while running) |
+| Purge sign-ups past retention | `python3 server/waitlist.py purge` (run daily by a timer; see below) |
 
 **The admin view is never exposed through nginx.** It listens only on loopback. It refuses requests whose Host isn't localhost, which blocks DNS rebinding. Deletes need a per-process token and a same-site Origin, which blocks CSRF from other tabs. It sends a strict CSP and doesn't log requests.
 
@@ -44,11 +45,12 @@ Run the CLI commands as the service user, with the same `WAITLIST_DB` as the ser
 
 | Variable | Default | Notes |
 |---|---|---|
-| `WAITLIST_DB` | `/var/lib/memorymanager/waitlist.db` | Directory is created if missing |
+| `WAITLIST_DB` | `/var/lib/memorymanager-waitlist/waitlist.db` | Directory is created if missing |
 | `WAITLIST_HOST`, `WAITLIST_PORT` | `127.0.0.1`, `8787` | Keep it on loopback; nginx proxies to it |
 | `WAITLIST_ADMIN_PORT` | `8788` | `0` turns the admin view off |
 | `WAITLIST_POLICY_VERSION` | `draft` | Set to the published policy's "last updated" date |
-| `WAITLIST_RATE_LIMIT`, `WAITLIST_RATE_WINDOW` | `5`, `600` | Attempts per client per window (seconds) |
+| `WAITLIST_RATE_LIMIT`, `WAITLIST_RATE_WINDOW` | `5`, `600` | Attempts per client per window (seconds). `X-Real-IP` is trusted only from loopback, i.e. nginx on the same host |
+| `WAITLIST_RETENTION_DAYS` | `365` | `purge` deletes sign-ups older than this (policy: 12 months, provisional) |
 
 ## Deploying (for devops)
 
@@ -63,10 +65,10 @@ After=network.target
 
 [Service]
 ExecStart=/usr/bin/python3 /var/www/memorymanager/current/server/waitlist.py serve
-Environment=WAITLIST_DB=/var/lib/memorymanager/waitlist.db
+Environment=WAITLIST_DB=/var/lib/memorymanager-waitlist/waitlist.db
 Environment=WAITLIST_POLICY_VERSION=draft
 DynamicUser=yes
-StateDirectory=memorymanager
+StateDirectory=memorymanager-waitlist
 StateDirectoryMode=0700
 NoNewPrivileges=yes
 ProtectSystem=strict
@@ -92,5 +94,7 @@ location = /api/waitlist {
     proxy_set_header X-Real-IP $remote_addr;
 }
 ```
+
+**Retention purge.** The privacy policy keeps sign-ups for at most 12 months (provisional), so run `purge` daily with a systemd timer. Use the same `Environment=` lines and user as the service, and `ExecStart=/usr/bin/python3 .../server/waitlist.py purge`, with `OnCalendar=daily` and `Persistent=true`.
 
 **Backups.** Back up the `.db` file with `waitlist.py backup`, not `cp`, because the database runs in WAL mode. Keep backups inside the retention window the privacy policy promises, so that a deleted sign-up also disappears from backups in time.

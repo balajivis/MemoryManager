@@ -143,6 +143,35 @@ class RateLimit(WaitlistServer):
         self.assertEqual(len(self.rows()), 4)
 
 
+class Retention(unittest.TestCase):
+    def test_purge_removes_only_rows_past_retention(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db = os.path.join(tmp, "waitlist.db")
+            waitlist.init_db(db)
+            with sqlite3.connect(db) as conn:
+                conn.executemany("INSERT INTO waitlist (email, created_at, policy_version) VALUES (?, ?, 'draft')", [
+                    ("old@example.com", "2020-01-01T00:00:00Z"),
+                    ("edge@example.com", "2000-01-01T00:00:00Z"),
+                ])
+            waitlist.add_signup("new@example.com", db)
+            self.assertEqual(waitlist.purge(365, db), 2)
+            with sqlite3.connect(db) as conn:
+                self.assertEqual([r[0] for r in conn.execute("SELECT email FROM waitlist")], ["new@example.com"])
+            env = {**os.environ, "WAITLIST_DB": db, "WAITLIST_RETENTION_DAYS": "0"}
+            out = subprocess.run([sys.executable, waitlist.__file__, "purge"], env=env, capture_output=True, text=True).stdout
+            self.assertIn("older than 0 days", out)
+
+
+class ForwardedAddress(WaitlistServer):
+    rate_limit = 1
+
+    def test_x_real_ip_is_trusted_from_loopback(self):
+        # the test client connects from 127.0.0.1, i.e. it stands in for nginx
+        self.assertEqual(self.post({"email": "a@example.com"}, headers={"X-Real-IP": "198.51.100.1"})[0], 200)
+        self.assertEqual(self.post({"email": "b@example.com"}, headers={"X-Real-IP": "198.51.100.2"})[0], 200)
+        self.assertEqual(self.post({"email": "c@example.com"}, headers={"X-Real-IP": "198.51.100.1"})[0], 429)
+
+
 class OperatorCommands(unittest.TestCase):
     def test_count_export_delete(self):
         with tempfile.TemporaryDirectory() as tmp:
