@@ -1,3 +1,8 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MemoryManager: one memory for every AI you use</title>
 <meta name="description" content="Your context is scattered across ChatGPT, Claude, Gemini and more. MemoryManager keeps one memory you own, so every AI tool starts with your context.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,6 +23,7 @@
     --serif: "Newsreader", "Iowan Old Style", Georgia, serif;
     --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
     --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -159,7 +165,8 @@
     .field .button { width: 100%; }
   }
 </style>
-
+</head>
+<body>
 <div class="wrap">
   <header class="top">
     <a class="wordmark" href="#">MemoryManager</a>
@@ -317,3 +324,5 @@
     document.getElementById("waitlist-notice").textContent = "Sign-up isn't live yet. Nothing was sent or saved.";
   });
 </script>
+</body>
+</html>
