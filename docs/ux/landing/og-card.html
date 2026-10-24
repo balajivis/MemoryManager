@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MemoryManager share card (source)</title>
+<!-- Source for og-card.png (1200x630). Render: headless Chrome, window 1200x630, screenshot. Owner: ux. -->
+<link rel="stylesheet" href="../../../site/fonts/fonts.css">
+<style>
+  :root {
+    --bg: #faf8f4; --surface: #ffffff; --ink: #1c1b19; --muted: #6b675f; --line: #e6e1d8;
+    --accent: #1f5e5b; --accent-tint: rgba(31, 94, 91, 0.08);
+    --serif: "Newsreader", Georgia, serif; --sans: "Inter", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--sans); }
+  .card { width: 1200px; height: 630px; padding: 72px 72px 64px; display: grid; grid-template-columns: 1fr 470px; gap: 56px; align-items: center; }
+  .wordmark { font: 600 30px/1 var(--serif); margin-bottom: 40px; }
+  h1 { font: 600 76px/1.04 var(--serif); letter-spacing: -0.015em; margin: 0; }
+  .sub { margin-top: 28px; font-size: 25px; line-height: 1.4; color: var(--muted); max-width: 30ch; text-wrap: balance; }
+  .memory { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; transform: rotate(-1.5deg); box-shadow: 0 2px 6px rgba(28,27,25,0.06); }
+  .head { display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; border-bottom: 1px solid var(--line); font-weight: 600; font-size: 21px; }
+  .tag { font: 500 13px/1 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px; }
+  ul { list-style: none; margin: 0; padding: 0; }
+  li { padding: 16px 24px; border-bottom: 1px solid var(--line); display: grid; gap: 6px; }
+  li:last-child { border-bottom: 0; }
+  .kind { font: 500 13px/1 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .statement { font-size: 20px; line-height: 1.35; }
+  .meta { font: 400 14px/1.2 var(--mono); color: var(--muted); }
+  .used { padding: 14px 24px; border-top: 1px solid var(--line); background: var(--accent-tint); color: var(--accent); font: 500 15px/1.3 var(--mono); }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div>
+      <div class="wordmark">MemoryManager</div>
+      <h1>One memory for every AI you use.</h1>
+      <p class="sub">Every chat starts with your context, not from zero.</p>
+    </div>
+    <div class="memory">
+      <div class="head"><span>Your memory</span><span class="tag">Example</span></div>
+      <ul>
+        <li><span class="kind">Preference</span><span class="statement">Likes answers short, with code first and no preamble.</span><span class="meta">from ChatGPT · Sep 30</span></li>
+        <li><span class="kind">Project</span><span class="statement">Rebuilding the pricing page. Launch target is mid-November.</span><span class="meta">from Claude · Oct 18</span></li>
+        <li><span class="kind">Decision</span><span class="statement">Chose Postgres over MongoDB for the side project.</span><span class="meta">from Gemini · Oct 12</span></li>
+      </ul>
+      <div class="used">↳ Used just now in a new chat in Cursor</div>
+    </div>
+  </div>
+</body>
+</html>

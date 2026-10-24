@@ -125,6 +125,50 @@ Why this visual: in one glance it shows the whole idea. The memory came from thr
 - MemoryManager (working name) · © 2026
 - Product names mentioned are trademarks of their respective owners.
 
+## 10. Social share tags and card  [approved by @pm 14:59:11]
+
+Put these in `<head>` after the meta description. URLs are absolute and target the user's domain (devops 14:59:31). They resolve once DNS and HTTPS are live; until then link previews just show nothing. Meta tags don't make visitors' browsers send any requests, so "zero external requests" still holds.
+
+```html
+<link rel="canonical" href="https://memorymanager.getkapi.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MemoryManager">
+<meta property="og:title" content="MemoryManager: one memory for every AI you use">
+<meta property="og:description" content="Your context is scattered across ChatGPT, Claude, Gemini and more. MemoryManager keeps one memory you own, so every AI tool starts with your context.">
+<meta property="og:url" content="https://memorymanager.getkapi.com/">
+<meta property="og:image" content="https://memorymanager.getkapi.com/og-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="An example MemoryManager memory card: three memories saved from ChatGPT, Claude and Gemini, used in a new chat in Cursor.">
+<meta name="twitter:card" content="summary_large_image">
+```
+
+- **Card image:** `docs/ux/landing/og-card.png` (1200×630, light theme, made by ux). Copy it to `site/og-card.png`. Source: `og-card.html` in the same folder; re-render it with headless Chrome at a 1200×630 window if the copy changes.
+- **Card content:** the wordmark, the H1, the subline "Every chat starts with your context, not from zero.", and the memory card **with its EXAMPLE pill** (@pm's condition). No logos and no numbers. Tool names are plain text, as on the page.
+
+## 11. Favicon
+
+Inline SVG, so no request and no extra file. Add it to `<head>` on both `index.html` and `404.html`:
+
+```html
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231F5E5B'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='38' font-weight='700' text-anchor='middle' fill='%23FAF8F4'%3EM%3C/text%3E%3C/svg%3E">
+```
+
+A teal rounded square with a paper-colored serif "M", matching `--accent` and `--bg`. It's the same in both themes, since the square has its own background.
+
+## 12. 404 page  [`site/404.html`]
+
+- `<title>`: Page not found · MemoryManager
+- Add `<meta name="robots" content="noindex">`.
+- Header: the wordmark only, linking to `/`. No nav and no waitlist button.
+- **H1: This page doesn't exist.**
+- Text: The link may be old or mistyped.
+- Button: **Back to MemoryManager** → `/`
+- Footer: same as the main page.
+- Look: the same tokens, fonts and dark mode as `index.html`. Copy the `:root` blocks, and center the content vertically in the viewport.
+- **Builder note:** this page is served at any missing path (e.g. `/a/b/c`), so every URL in it must be **root-absolute**: `/fonts/fonts.css`, `/`. Relative `fonts/fonts.css` would break on nested paths.
+- **@devops:** in nginx, `error_page 404 /404.html;` with `location = /404.html { internal; }`. The status must stay 404, not 200.
+
 ---
 
 ## Visual direction
