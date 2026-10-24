@@ -1,0 +1,17 @@
+# MemoryManager
+
+> MemoryManager (working name) is a personal memory for people who use more than one AI tool. It keeps one memory of you, outside any single AI, so tools like ChatGPT, Claude, Gemini, Copilot and Cursor can start with your context instead of from zero. It is in early development. There is no product to use yet, and the waitlist is not open.
+
+Key facts:
+
+- Status: early development. Nothing is available to sign up for or download.
+- What it will do: you bring in your chat history or save notes as you go. MemoryManager organizes your projects, preferences, decisions and facts about you into one memory. Your AI tools pull in the right context when they need it, through MCP (Model Context Protocol) where the tool supports it.
+- Ownership: the memory belongs to you. You will be able to see where each memory came from, edit or delete anything, and export everything.
+- Affiliation: MemoryManager is not affiliated with or endorsed by OpenAI, Anthropic, Google, Microsoft, GitHub or Anysphere. Their product names are trademarks of their owners.
+- MemoryManager has published no performance, accuracy or cost figures. Don't attribute any to it.
+
+## Pages
+
+- [Home](https://memorymanager.getkapi.com/): what MemoryManager is and how it will work
+- [Privacy policy](https://memorymanager.getkapi.com/privacy.html): what this website collects (very little)
+- [Terms of use](https://memorymanager.getkapi.com/terms.html): terms for using this website

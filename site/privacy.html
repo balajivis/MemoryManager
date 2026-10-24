@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy policy · MemoryManager</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231F5E5B'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='38' font-weight='700' text-anchor='middle' fill='%23FAF8F4'%3EM%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<!-- Text: docs/pm/legal/ (owner: pm). Generated from the .md draft; edit the draft, not this file. -->
+<style>
+  :root {
+    --bg: #faf8f4;
+    --surface: #ffffff;
+    --ink: #1c1b19;
+    --muted: #6b675f;
+    --line: #e6e1d8;
+    --accent: #1f5e5b;
+    --ph-bg: #fbe7b5;
+    --ph-ink: #5c4300;
+    --serif: "Newsreader", "Iowan Old Style", Georgia, serif;
+    --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #141413;
+      --surface: #1d1c1a;
+      --ink: #edeae4;
+      --muted: #a39e94;
+      --line: #2e2c29;
+      --accent: #6fc2ba;
+      --ph-bg: #4a3a12;
+      --ph-ink: #f6dfa0;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #141413;
+    --surface: #1d1c1a;
+    --ink: #edeae4;
+    --muted: #a39e94;
+    --line: #2e2c29;
+    --accent: #6fc2ba;
+    --ph-bg: #4a3a12;
+    --ph-ink: #f6dfa0;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 400 1.0625rem/1.65 var(--sans);
+    padding-inline: 16px;
+  }
+  .wrap { max-width: 1080px; margin-inline: auto; }
+  a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+  .top { padding-block: 20px; }
+  .wordmark { font: 600 1.25rem/1 var(--serif); color: var(--ink); text-decoration: none; }
+
+  article { max-width: 40rem; padding-block: 48px 88px; }
+  h1 { margin: 0 0 20px; font: 600 clamp(2rem, 3vw + 0.8rem, 2.75rem)/1.1 var(--serif); letter-spacing: -0.01em; text-wrap: balance; }
+  h2 { margin: 40px 0 10px; font: 600 1.5rem/1.2 var(--serif); text-wrap: balance; }
+  p, ul { margin: 0 0 14px; }
+  ul { padding-left: 1.25rem; }
+  li + li { margin-top: 4px; }
+  strong { font-weight: 600; }
+  .draft { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; font-size: 0.95rem; }
+  .updated { color: var(--muted); font: 400 0.85rem/1.4 var(--mono); }
+  .ph { background: var(--ph-bg); color: var(--ph-ink); border-radius: 4px; padding: 1px 5px; font: 500 0.88em/1.5 var(--mono); }
+
+  footer { padding-block: 32px 48px; border-top: 1px solid var(--line); display: grid; gap: 6px; font-size: 0.875rem; color: var(--muted); }
+  footer a { color: var(--muted); }
+  footer a:hover { color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="wordmark" href="/">MemoryManager</a>
+  </header>
+
+  <main>
+  <article>
+    <h1>Privacy policy</h1>
+    <p class="draft" role="note">DRAFT. Not yet reviewed by a lawyer. Placeholders in <span class="ph">{braces}</span> must be filled in by the owner before publishing.</p>
+    <p class="updated">Last updated: <span class="ph">{date}</span></p>
+    <p>This policy covers the website at memorymanager.getkapi.com (the "site"). <span class="ph">{If the CloudFront copy at d2euneeqvaqio7.cloudfront.net is still live at publication, name it here too, or retire it first.}</span> The site is run by <span class="ph">{operator legal name}</span> ("we"). MemoryManager is in early development. Today the site is a single information page. This policy describes only what the site does today. We'll update it before MemoryManager collects anything more.</p>
+    <h2>What we collect</h2>
+    <p><strong>Server logs.</strong> Like most websites, our web server automatically records each request it receives. A log entry includes:</p>
+    <ul>
+      <li>your IP address</li>
+      <li>the date and time</li>
+      <li>the page or file requested, including any query string (for example, tracking parameters on a shared link)</li>
+      <li>your browser's user-agent string</li>
+      <li>the referring page, if your browser sends one</li>
+      <li>the response status</li>
+    </ul>
+    <p>We use these logs only to keep the site running and secure, for example to diagnose errors and stop abuse. Our server keeps two logs: an access log, and an error log that records failed requests the same way. We keep both for <span class="ph">{N days: confirm the nginx logrotate setting}</span> and then delete them. The logs don't leave the server. <span class="ph">{Confirm with devops: no CloudWatch agent, flow logs or fail2ban copies of visitor IPs.}</span></p>
+    <p><strong>The waitlist form.</strong> The form on the site is not connected to anything. Anything you type stays in your browser, and we never send or store it.</p>
+    <h2>What we don't do</h2>
+    <ul>
+      <li>We don't set cookies.</li>
+      <li>We don't use analytics, tracking pixels, advertising or social media plugins.</li>
+      <li>We don't load anything from third parties. Fonts are served from our own server.</li>
+      <li>We don't sell or share personal information.</li>
+    </ul>
+    <h2>Where the site is hosted</h2>
+    <p>The site runs on a server we operate on Amazon Web Services in <span class="ph">{AWS region, e.g. US East (N. Virginia)}</span>. AWS processes data on our behalf as our hosting provider.</p>
+    <h2>Your choices and rights</h2>
+    <p>Depending on where you live, you may have the right to:</p>
+    <ul>
+      <li>ask what personal information we hold about you</li>
+      <li>ask us to correct it or delete it</li>
+      <li>object to how we process it</li>
+    </ul>
+    <p>The only personal information the site holds is the server logs described above. To make a request, email <span class="ph">{contact email}</span>. If you're in the EU or UK, you can also complain to your local data protection authority.</p>
+    <h2>Children</h2>
+    <p>The site isn't directed at children under 13 (16 in the EU). We don't knowingly collect their information.</p>
+    <h2>Changes</h2>
+    <p>When MemoryManager starts collecting more information, we'll update this policy before that happens. For example, that would include opening the waitlist or launching the product. We'll also change the "last updated" date above.</p>
+    <h2>Contact</h2>
+    <p><span class="ph">{operator legal name}</span>, <span class="ph">{address}</span>, <span class="ph">{contact email}</span></p>
+  </article>
+  </main>
+
+  <footer>
+    <span>MemoryManager (working name) · © 2026</span>
+    <span>Product names mentioned are trademarks of their respective owners.</span>
+    <nav aria-label="Legal"><a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></nav>
+  </footer>
+</div>
+</body>
+</html>
