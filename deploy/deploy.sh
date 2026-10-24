@@ -59,8 +59,14 @@ if [ ! -f "$cert" ]; then   # also prove the HTTPS vhost parses, using a throwaw
   sudo nginx -t -q -c "$t/nginx.conf" || { echo "candidate HTTPS vhost FAILED nginx -t"; exit 1; }
 fi
 sudo logrotate -d "$src/logrotate/nginx" >/dev/null 2>&1 || { echo "candidate logrotate config FAILED"; exit 1; }
-sudo rsyslogd -N1 -f "$src/rsyslog/30-nginx-anon.conf" >/dev/null 2>&1 \
-  || { echo "candidate rsyslog config FAILED"; sudo rsyslogd -N1 -f "$src/rsyslog/30-nginx-anon.conf"; exit 1; }
+# AppArmor lets rsyslogd read config only under /etc/rsyslog.d, so check a copy there under a
+# name the live '*.conf' include never loads, then remove it.
+rcheck=/etc/rsyslog.d/.candidate-nginx-anon.check
+sudo install -m 644 "$src/rsyslog/30-nginx-anon.conf" "$rcheck"
+if ! sudo rsyslogd -N1 -f "$rcheck" >/dev/null 2>&1; then
+  echo "candidate rsyslog config FAILED"; sudo rsyslogd -N1 -f "$rcheck"; sudo rm -f "$rcheck"; exit 1
+fi
+sudo rm -f "$rcheck"
 echo "candidate OK: nginx -t (HTTP and HTTPS vhosts), logrotate -d and rsyslogd -N1 pass; will install $(basename "$site")"
 [ "$mode" = install ] || exit 0
 
