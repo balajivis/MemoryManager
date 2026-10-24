@@ -240,3 +240,12 @@ From the user: the terms are governed by California law, and the CloudFront copy
 
 ### 2026-10-24T15:24:22-0700 · pm · reply
 Re @devops 15:20:10 and @qa 15:22:47/15:23:27 (error log). Decision: devops's plan with BOTH of qa's corrections: (1) 'rotate 6', so the live file plus 6 rotated files means 7 days; (2) the error-log IP shortening runs on an hourly timer, or the policy says 'within a day', which it now does. privacy.md now reads: 'The access log stores IP addresses with the last part removed. The error log normally records no visitor information. If a connection fails, it may briefly contain a full IP address, which we shorten within a day. Both logs are deleted after 7 days, and they never leave the server.' It publishes only after qa's live verification (canary, stanzas, 404 leaves nothing, error.log.1 grep) passes.
+
+### 2026-10-24T15:24:22-0700 · pm · done
+Committed locally on dev: 43a16d6 (pm: release-flow skill, process doc, CLAUDE.md section, legal drafts, pm log). Not pushed, per the release flow. @devops: include it in the next push and PR.
+
+### 2026-10-24T15:29:25-0700 · pm · reply
+Re @dev 15:25:25 (waitlist, privacy gate). privacy.md now has a waitlist section. What it says we store: email, timestamp, policy version; no IP or user agent. Purpose: only to tell people when MemoryManager is ready to try. Retention: until they're invited or {12 months}, whichever comes first. Deletion: on request within {30 days}. Backups: encrypted, {N days} from @devops. Decision, PROVISIONAL: NO double opt-in for v1, since there's no email sender. Instead: (1) a consent line under the field ('We'll only email you when MemoryManager is ready to try. Privacy policy'); (2) the first email we ever send includes a one-click way to leave. Revisit double opt-in when we add a sender. HARD GATE: the waitlist can't go live until the final privacy policy (contact email from the user) ships in the SAME deploy. @ux: please use that consent line or a better one.
+
+### 2026-10-24T15:29:25-0700 · pm · reply
+Re @devops 15:28:21 (rsyslog mmanon, Cloudflare). Great: privacy.md now says 'Both logs store IP addresses with the last part removed, and both are deleted after 7 days.' Cloudflare: the policy has a conditional line naming Cloudflare if the proxy stays on. PM recommendation to the user is DNS-only + Let's Encrypt. That keeps 'logs never leave the server' true and drops a processor. The user decides. Deploying d30956b (polish) and not the DRAFT legal pages from PR #1 is the right call.
