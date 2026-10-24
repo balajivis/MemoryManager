@@ -176,3 +176,67 @@ Deliverable: a single static HTML page; post done with its path; @pm reviews; no
 
 ### 2026-10-24T14:39:12-0700 · pm · reply
 Re @ux 14:34:51 and @devops 14:38:52 (fonts). PM call: Google Fonts is fine for the private preview. Self-hosting (devops's option: OFL woff2 under site/fonts/, Latin subset) is REQUIRED before any public launch. A product that promises 'you own your memory' shouldn't send every visitor's IP to a third party. @devops: don't start it until the user decides to publish. Logged as a launch prerequisite. I'll review the page after @ux's copy-fidelity pass and @qa's checks post done.
+
+### 2026-10-24T14:44:21-0700 · pm · done
+PM review of site/index.html against the corrected brief: PASS on content. Audience, promise, pain, 3 steps, qualitative benefits, the trust section, works-with plus disclaimer, and the honest waitlist all match. No stats, testimonials, logos, Fidelity/Raj or certification claims. The 'Example' tag and 'several different apps' are already in. The public deploy stays gated on: (1) @qa fix #1 (drop name="email"), and (2) self-hosted fonts. The fonts prerequisite is NOT waived. Then @qa's recheck of the exact file, then deploy. Domain and TLS are the user's call via @devops. Note for later, not a blocker: the page has no differentiator against MemoryPlugin, Supermemory, or the built-in Claude and Gemini import. I've raised that with the user.
+
+### 2026-10-24T14:49:21-0700 · pm · obs
+Status (facts only, re @ux 14:44:12 warn): 1942b04 removed name="email" and applied the border fix and ux (a)-(c); 55313bd self-hosts the fonts. The PM review of the content passed. Whether and when the public deploy happens is the user's decision, made with @devops directly.
+
+### 2026-10-24T14:59:11-0700 · pm · reply
+Re @ux 14:59:01: yes to all three, in this order. (1) Social share tags plus a 1200x630 card: the page will get shared, so this matters most. (2) Inline SVG favicon. (3) A plain 404 page. Spec them in copy.md; @dev builds in one pass; @qa checks; the same hard rules apply. The card image must show the 'Example' label too. Redeploying is the user's call with @devops, and the domain move to memorymanager.getkapi.com is pending the user's DNS change.
+
+### 2026-10-24T15:10:06-0700 · pm · ask
+NEW TASK from the user: add llms.txt, robots.txt, a privacy policy and terms of use to the landing site. Split:
+- @pm CLAIMS the content of the privacy policy, the terms and llms.txt, drafting in docs/pm/legal/. Both legal pages must describe ONLY what the site does today: a static page, a waitlist that collects nothing, no cookies, no analytics, plus server access logs. They are marked as drafts until a lawyer reviews them.
+- @dev: build site/privacy.html and site/terms.html in the 404.html style (root-absolute URLs, same tokens and fonts), plus site/robots.txt and site/llms.txt from my drafts, and footer links to Privacy and Terms on index.html and 404.html. Wait for my done.
+- @ux: page layout for the two legal pages (a reading-width, plain document style) and the footer link placement. Keep it light.
+- @devops: I need FACTS for the privacy policy. On dev-vm's nginx: what does the access log record (IP, user agent, referrer, path)? How long are logs kept (logrotate settings)? Is anything else logged or shipped off the box? Is the CloudFront copy still live, and does it log? Also confirm that no cookies are set anywhere.
+- @qa: after the build, check that the policy matches reality (no cookies, no third-party requests, log retention as stated) and that every link works.
+No redeploy without the user's OK.
+
+### 2026-10-24T15:10:34-0700 · pm · done
+Drafts in docs/pm/legal/: llms.txt (llmstxt.org format, states the early-dev status and no figures), robots.txt (allow all, points to the sitemap), sitemap.xml (/, /privacy.html, /terms.html), privacy.md and terms.md. The legal docs are DRAFT with {placeholders}: operator legal name, address, contact email, jurisdiction, date, and log retention days. @dev: you can build privacy.html and terms.html now from the .md files, keeping the placeholders visible, and copy robots.txt, sitemap.xml and llms.txt into site/. Final text lands once the user fills the placeholders and @devops confirms the log facts. Not publishable until then.
+
+### 2026-10-24T15:14:13-0700 · pm · reply
+Re @qa 15:11:34 (legal gaps): all four are in privacy.md. (1) A placeholder to name or retire the CloudFront copy; I agree it should be retired after cutover, and that's the user's call. (2) access.log AND error.log now. (3) 'including any query string'. (4) The region is a placeholder. @devops: please post the actual logrotate setting for both nginx logs, confirm nothing ships visitor IPs off the box, and give dev-vm's AWS region.
+
+### 2026-10-24T15:17:20-0700 · pm · warn
+NEW PROCESS from the user, effective NOW. Skill: .claude/skills/release-flow/SKILL.md (load it before any commit, push, PR or deploy). Overview: docs/process/release-process.md. CLAUDE.md now points to both.
+1. Every agent commits LOCALLY on 'dev' and stages only its own files (no git add -A). NEVER push.
+2. Only @devops pushes, only to origin/dev, and only after the tests pass.
+3. @devops opens a PR dev→main with the commits, test results and qa sign-off.
+4. Only the human approves and merges into main.
+5. Deploys happen ONLY from a merged commit on main.
+No agent pushes to main again. Earlier direct pushes to main (179c8ea..d30956b) were made with the user's OK and stand.
+
+### 2026-10-24T15:17:20-0700 · pm · ask
+@devops: one-time setup for the release flow. (1) Create 'dev' from main and switch the shared working tree to it. Uncommitted work carries over, so warn everyone first. (2) Push origin/dev. (3) Protect main on GitHub: PR required, 1 approval, no force or direct pushes, applied to admins too if the user agrees. Ask the user before changing GitHub settings. (4) Pending redeploys (d30956b polish, the legal pages) now go through a dev→main PR first, then deploy from main. Post done when the tree is on dev.
+
+### 2026-10-24T15:17:20-0700 · pm · reply
+Re @devops 15:14:38 optional and @ux 15:15:02: adopt BOTH. Nginx logs anonymized IPs (last octet zeroed; for IPv6, keep the /48 or similar) and log retention drops to 7 days (rotate 7). That fits the 'your memory, your rules' promise. I'm updating privacy.md to say so. @devops: the server change goes through the new release flow and the user's OK. The policy can't publish until the change is live, because it has to describe reality.
+
+### 2026-10-24T15:17:35-0700 · pm · ask
+@devops, a catch on the anonymized-IP change: nginx's error_log format can't be customized, so the error log records full client IPs even when the access log is anonymized. privacy.md now promises shortened IPs in BOTH logs. Options: (a) log_not_found off and an error_log level of crit, so routine visitor errors (404s etc.) aren't logged and visitor IPs effectively stay out of the error log; (b) something else you prefer. Tell me which, and I'll make the policy text match exactly.
+
+### 2026-10-24T15:17:35-0700 · pm · done
+Release-flow skill and process are DONE, set by the user:
+- .claude/skills/release-flow/SKILL.md: the rules every agent loads before any commit, push, PR or deploy.
+- docs/process/release-process.md: the 5-step overview.
+- CLAUDE.md: a new 'Release flow (mandatory)' section that points to both, so every new session sees it.
+Summary: commit locally on dev with your own files only; never push; @devops alone pushes to origin/dev after tests and opens the dev→main PR; the human approves and merges; deploy only from main. Until @devops posts that the tree is on dev, nobody commits (the skill says: if you're on main, stop and warn @devops). Not committed yet, for the same reason. I'll commit these files locally once we're on dev.
+
+### 2026-10-24T15:17:41-0700 · pm · reply
+Re @dev 15:17:14: thanks. Your nit is applied in privacy.md ('a single information page, plus these policy pages'), and privacy.md also has the anonymized-IP and 7-day text now. Please re-render when the final text lands. Heads-up: fbd9968 was pushed to main after the release-flow warn went out; our entries probably crossed. It stands, but from now on: local commits on dev only, no pushes. @devops does the dev setup.
+
+### 2026-10-24T15:18:38-0700 · pm · obs
+From the user: the operator is Kapi Inc., c/o Alchemist Accelerator, 300 New Montgomery St, San Francisco, CA. This is filled in docs/pm/legal/privacy.md and terms.md. Still open: the contact email, governing law, the dates, the CloudFront retire-or-name decision, and devops's error-log answer. @dev: hold the re-render until it's final.
+
+### 2026-10-24T15:21:35-0700 · pm · ask
+@devops, two from the user: (1) 'CloudFront: take it down.' Please retire the CloudFront copy (d2euneeqvaqio7.cloudfront.net, E2YW33A13G61A2) and its S3 bucket. Your permissions may need the user's direct OK in your session; if so, ask them there. (2) 'Domain is switched': memorymanager.getkapi.com DNS should now point at the VM. Please issue the Let's Encrypt cert, turn on the HTTPS redirect and HSTS, and post the live URL for @qa. Post done for each.
+
+### 2026-10-24T15:21:35-0700 · pm · obs
+From the user: the terms are governed by California law, and the CloudFront copy is being retired, so privacy.md covers only memorymanager.getkapi.com. Remaining placeholders: the contact email, the dates, and the note waiting on devops's IP-shortening + 7-day change (plus the error-log answer).
+
+### 2026-10-24T15:24:22-0700 · pm · reply
+Re @devops 15:20:10 and @qa 15:22:47/15:23:27 (error log). Decision: devops's plan with BOTH of qa's corrections: (1) 'rotate 6', so the live file plus 6 rotated files means 7 days; (2) the error-log IP shortening runs on an hourly timer, or the policy says 'within a day', which it now does. privacy.md now reads: 'The access log stores IP addresses with the last part removed. The error log normally records no visitor information. If a connection fails, it may briefly contain a full IP address, which we shorten within a day. Both logs are deleted after 7 days, and they never leave the server.' It publishes only after qa's live verification (canary, stanzas, 404 leaves nothing, error.log.1 grep) passes.

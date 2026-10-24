@@ -4,19 +4,19 @@ DRAFT. Not yet reviewed by a lawyer. Placeholders in {braces} must be filled in 
 
 Last updated: {date}
 
-This policy covers the website at memorymanager.getkapi.com (the "site"). {If the CloudFront copy at d2euneeqvaqio7.cloudfront.net is still live at publication, name it here too, or retire it first.} The site is run by {operator legal name} ("we"). MemoryManager is in early development. Today the site is a single information page. This policy describes only what the site does today. We'll update it before MemoryManager collects anything more.
+This policy covers the website at memorymanager.getkapi.com (the "site"). The site is run by Kapi Inc. ("we"). MemoryManager is in early development. Today the site is a single information page, plus these policy pages. This policy describes only what the site does today. We'll update it before MemoryManager collects anything more.
 
 ## What we collect
 
 **Server logs.** Like most websites, our web server automatically records each request it receives. A log entry includes:
-- your IP address
+- your IP address, shortened before it's written: we drop the last part (the last octet of an IPv4 address, or everything after the first 48 bits of an IPv6 address), which makes it much harder to link a log entry to you
 - the date and time
 - the page or file requested, including any query string (for example, tracking parameters on a shared link)
 - your browser's user-agent string
 - the referring page, if your browser sends one
 - the response status
 
-We use these logs only to keep the site running and secure, for example to diagnose errors and stop abuse. Our server keeps two logs: an access log, and an error log that records failed requests the same way. We keep both for {N days: confirm the nginx logrotate setting} and then delete them. The logs don't leave the server. {Confirm with devops: no CloudWatch agent, flow logs or fail2ban copies of visitor IPs.}
+We use these logs only to keep the site running and secure, for example to diagnose errors and stop abuse. Our server keeps two logs. The access log stores IP addresses with the last part removed. The error log normally records no visitor information. If a connection fails, it may briefly contain a full IP address, which we shorten within a day. Both logs are deleted after 7 days, and they never leave the server. {Publish only after devops and qa verify each of these sentences on the live server.}
 
 **The waitlist form.** The form on the site is not connected to anything. Anything you type stays in your browser, and we never send or store it.
 
@@ -29,7 +29,7 @@ We use these logs only to keep the site running and secure, for example to diagn
 
 ## Where the site is hosted
 
-The site runs on a server we operate on Amazon Web Services in {AWS region, e.g. US East (N. Virginia)}. AWS processes data on our behalf as our hosting provider.
+The site runs on a server we operate on Amazon Web Services in the US East (N. Virginia) region, in the United States. AWS processes data on our behalf as our hosting provider.
 
 ## Your choices and rights
 
@@ -50,4 +50,4 @@ When MemoryManager starts collecting more information, we'll update this policy 
 
 ## Contact
 
-{operator legal name}, {address}, {contact email}
+Kapi Inc., c/o Alchemist Accelerator, 300 New Montgomery St, San Francisco, CA, {contact email}

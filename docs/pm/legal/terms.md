@@ -4,7 +4,7 @@ DRAFT. Not yet reviewed by a lawyer. Placeholders in {braces} must be filled in 
 
 Last updated: {date}
 
-These terms apply to your use of memorymanager.getkapi.com (the "site"), run by {operator legal name} ("we"). By using the site, you agree to them.
+These terms apply to your use of memorymanager.getkapi.com (the "site"), run by Kapi Inc. ("we"). By using the site, you agree to them.
 
 ## The site
 
@@ -42,7 +42,7 @@ We may update these terms. The "last updated" date shows when. If you keep using
 
 ## Governing law
 
-These terms are governed by the laws of {jurisdiction}.
+These terms are governed by the laws of the State of California, without regard to its conflict-of-law rules.
 
 ## Contact
 
