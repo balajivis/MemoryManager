@@ -5,6 +5,7 @@
 #   deploy/deploy.sh check  <ref>      validate <ref>'s server config on the VM; installs nothing (any ref)
 #   deploy/deploy.sh server <commit>   install deploy/ config from <commit> (must be merged into origin/main)
 #   deploy/deploy.sh site   <commit>   publish site/ from <commit> (must be merged into origin/main)
+#   deploy/deploy.sh waitlist <commit> <policy-date>   install server/ (waitlist service) from <commit>
 #   deploy/deploy.sh tls               get the Let's Encrypt cert (works even while Cloudflare proxies)
 #   deploy/deploy.sh status            show what's deployed
 #
@@ -143,6 +144,30 @@ done
 echo "site is now $commit"
 '
 
+REMOTE_WAITLIST='
+set -euo pipefail
+commit="$1"; policy="$2"; base=/opt/memorymanager-waitlist; rel="$base/releases/$commit"
+sudo mkdir -p "$base/releases"
+sudo rm -rf "$rel"; sudo mv "/tmp/mm-waitlist-$commit/server" "$rel"
+sudo chown -R root:root "$rel"; sudo find "$rel" -type d -exec chmod 755 {} +; sudo find "$rel" -type f -exec chmod 644 {} +
+sudo ln -sfn "$rel" "$base/current.new" && sudo mv -T "$base/current.new" "$base/current"
+for u in memorymanager-waitlist.service memorymanager-waitlist-backup.service memorymanager-waitlist-backup.timer; do
+  sudo install -m 644 "/tmp/mm-waitlist-$commit/systemd/$u" "/etc/systemd/system/$u"
+done
+sudo install -d /etc/systemd/system/memorymanager-waitlist.service.d
+printf "[Service]\nEnvironment=WAITLIST_POLICY_VERSION=%s\n" "$policy" | sudo tee /etc/systemd/system/memorymanager-waitlist.service.d/policy.conf >/dev/null
+sudo systemctl daemon-reload
+sudo systemctl enable --now memorymanager-waitlist-backup.timer >/dev/null
+sudo systemctl enable memorymanager-waitlist.service >/dev/null
+sudo systemctl restart memorymanager-waitlist.service
+sleep 2
+systemctl is-active --quiet memorymanager-waitlist.service || { echo "waitlist service FAILED to start"; sudo journalctl -u memorymanager-waitlist -n 20 --no-pager; exit 1; }
+code=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8787/api/waitlist)
+echo "$(date -u +%FT%TZ) waitlist $commit policy=$policy" | sudo tee -a "$base/DEPLOYS" >/dev/null
+echo "waitlist is now $commit (policy $policy); GET /api/waitlist on loopback -> $code"
+sudo rm -rf "/tmp/mm-waitlist-$commit"
+'
+
 cmd="${1:-}"; shift || true
 case "$cmd" in
   check|server)
@@ -159,6 +184,16 @@ case "$cmd" in
     require_merged "$c"
     ship_tree "$c" site "/tmp/mm-site-$short"
     vm "bash -s -- $short" <<< "$REMOTE_SITE"
+    ;;
+  waitlist)
+    [ -n "${1:-}" ] && [ -n "${2:-}" ] || die "usage: deploy.sh waitlist <commit> <policy-date, e.g. 2026-10-25>"
+    [ "$2" = draft ] && [ "${ALLOW_DRAFT_POLICY:-}" != 1 ] \
+      && die "policy is 'draft': the waitlist goes live only with the final privacy policy (pm gate)"
+    c="$(resolve "$1")"; short="${c:0:7}"
+    require_merged "$c"
+    git -C "$REPO" archive --format=tar "$c" server deploy/systemd \
+      | vm "rm -rf /tmp/mm-waitlist-$short && mkdir -p /tmp/mm-waitlist-$short && tar -x -C /tmp/mm-waitlist-$short && mv /tmp/mm-waitlist-$short/deploy/systemd /tmp/mm-waitlist-$short/systemd"
+    vm "bash -s -- $short $2" <<< "$REMOTE_WAITLIST"
     ;;
   tls)
     last="$(vm "tail -n 1 /etc/nginx/DEPLOYS 2>/dev/null | cut -d' ' -f3")"

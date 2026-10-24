@@ -1,0 +1,24 @@
+# Nightly waitlist backup (run by memorymanager-waitlist-backup.timer).
+# Uses `waitlist.py backup` (safe while the WAL-mode DB is live), keeps 7 days of copies,
+# so a deleted sign-up is gone from every backup within 7 days (privacy policy).
+# Backups sit on the VM's encrypted EBS disk in /var/lib/memorymanager-backups (0700).
+# They protect against corruption or mistakes, not against losing the VM itself.
+
+[Unit]
+Description=MemoryManager waitlist backup
+
+[Service]
+Type=oneshot
+Environment=WAITLIST_DB=/var/lib/memorymanager/waitlist.db
+Environment=PYTHONDONTWRITEBYTECODE=1
+DynamicUser=yes
+StateDirectory=memorymanager memorymanager-backups
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateNetwork=yes
+ExecStart=/bin/sh -c 'test -f "$WAITLIST_DB" || exit 0; /usr/bin/python3 /opt/memorymanager-waitlist/current/waitlist.py backup "/var/lib/memorymanager-backups/waitlist-$(date -u +%%Y%%m%%dT%%H%%M%%SZ).db"'
+ExecStartPost=/usr/bin/find -H /var/lib/memorymanager-backups -name 'waitlist-*.db' -mtime +6 -delete

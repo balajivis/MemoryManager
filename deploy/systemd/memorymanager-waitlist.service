@@ -1,0 +1,46 @@
+# Waitlist API (127.0.0.1:8787) and admin view (127.0.0.1:8788, reached only through an
+# SSH tunnel). Installed by `deploy/deploy.sh waitlist`. Code is in
+# /opt/memorymanager-waitlist/current (one release dir per commit). The policy version
+# comes from a drop-in written by deploy.sh: memorymanager-waitlist.service.d/policy.conf.
+
+[Unit]
+Description=MemoryManager waitlist
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /opt/memorymanager-waitlist/current/waitlist.py serve
+Environment=WAITLIST_DB=/var/lib/memorymanager/waitlist.db
+Environment=PYTHONDONTWRITEBYTECODE=1
+DynamicUser=yes
+StateDirectory=memorymanager
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources
+CapabilityBoundingSet=
+AmbientCapabilities=
+ProtectClock=yes
+ProtectHostname=yes
+ProtectKernelLogs=yes
+ProtectProc=invisible
+ProcSubset=pid
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
