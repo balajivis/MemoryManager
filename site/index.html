@@ -158,7 +158,15 @@
   input[type="email"]::placeholder { color: var(--muted); }
   input[type="email"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 999px; }
   .caption { font-size: 0.875rem; color: var(--muted); }
+  [hidden] { display: none !important; }
+  .caption { max-width: 34rem; }
   .caption a { color: inherit; }
+  .ph { background: #fbe7b5; color: #5c4300; border-radius: 4px; padding: 1px 5px; font: 500 0.88em/1.5 var(--mono); }
+  .success { width: 100%; display: grid; gap: 8px; justify-items: center; background: var(--accent-tint); border-radius: 12px; padding: 18px 20px; }
+  .success:focus { outline: none; }
+  .success:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  #waitlist-success-email { font-weight: 600; word-break: break-all; }
+  .link-button { font: 500 0.95rem/1 var(--sans); color: var(--accent); background: none; border: 0; padding: 6px; text-decoration: underline; cursor: pointer; }
   .hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
   .notice:empty { padding: 0; }
   .notice[data-state="error"] { background: transparent; border: 1px solid var(--muted); }
@@ -326,12 +334,16 @@
             <button class="button" type="submit" id="waitlist-submit">Join the waitlist</button>
           </div>
           <div class="hp" aria-hidden="true">
-            <label for="waitlist-website">Leave this empty</label>
+            <label for="waitlist-website">Leave this field empty</label>
             <input id="waitlist-website" name="website" type="text" tabindex="-1" autocomplete="off">
           </div>
-          <p class="caption">We'll only use your email to tell you about MemoryManager. See our <a href="/privacy.html">privacy policy</a>.</p>
           <p class="notice" id="waitlist-notice" aria-live="polite"></p>
         </form>
+        <div class="success" id="waitlist-success" tabindex="-1" hidden>
+          <p><strong>You're on the list.</strong> We'll write to <span id="waitlist-success-email"></span> when there's something to try.</p>
+          <button type="button" class="link-button" id="waitlist-again">Use a different email</button>
+        </div>
+        <p class="caption">We keep only your email and the date you signed up, and use them only to tell you when MemoryManager is ready to try. To remove your email, write to <span class="ph">{contact email}</span>. <a href="/privacy.html">Privacy policy</a></p>
       </div>
     </section>
   </main>
@@ -344,41 +356,80 @@
 </div>
 
 <script>
-  // Sends the sign-up to /api/waitlist and shows the server's answer inline. The server
-  // owns the wording (server/waitlist.py MESSAGES), so the page and the no-JS result page match.
+  // Waitlist sign-up (copy: docs/ux/landing/copy.md §8). Without JS the form still posts
+  // normally and server/waitlist.py redirects to /joined.html or /join-error.html.
   (function () {
     var form = document.getElementById("waitlist-form");
     var email = document.getElementById("waitlist-email");
+    var website = document.getElementById("waitlist-website");
     var button = document.getElementById("waitlist-submit");
     var notice = document.getElementById("waitlist-notice");
+    var success = document.getElementById("waitlist-success");
     var label = button.textContent;
+    var MESSAGES = {
+      empty: "Enter your email address to join.",
+      invalid_email: "That doesn't look like an email address. Check it and try again.",
+      rate_limited: "Too many tries from your connection. Wait a few minutes, then try again.",
+      server_error: "Something went wrong, so you're not on the list yet. Please try again in a moment."
+    };
 
-    function show(text, state) {
-      notice.textContent = text;
-      notice.dataset.state = state;
+    function showError(key) {
+      notice.textContent = MESSAGES[key] || MESSAGES.server_error;
+      notice.dataset.state = "error";
+      email.setAttribute("aria-invalid", "true");
+      email.setAttribute("aria-describedby", "waitlist-notice");
+      email.focus();   // what they typed stays in the field
+    }
+
+    function clearError() {
+      notice.textContent = "";
+      delete notice.dataset.state;
+      email.removeAttribute("aria-invalid");
+      email.removeAttribute("aria-describedby");
+    }
+
+    function showSuccess(address) {
+      document.getElementById("waitlist-success-email").textContent = address;   // shown only in this browser
+      form.hidden = true;
+      success.hidden = false;
+      success.focus();
+    }
+
+    function setBusy(busy) {
+      button.disabled = busy;
+      button.textContent = busy ? "Joining…" : label;
+      form.setAttribute("aria-busy", busy ? "true" : "false");
     }
 
     form.addEventListener("submit", function (event) {
       event.preventDefault();
-      button.disabled = true;
-      button.textContent = "Joining…";
+      var address = email.value.trim();
+      if (!address) { return showError("empty"); }
+      if (!email.checkValidity()) { return showError("invalid_email"); }
+      clearError();
+      setBusy(true);
+      var controller = window.AbortController ? new AbortController() : null;
+      var timer = controller && setTimeout(function () { controller.abort(); }, 15000);
       fetch(form.action, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.value, website: document.getElementById("waitlist-website").value })
+        body: JSON.stringify({ email: address, website: website.value }),
+        signal: controller && controller.signal
       })
         .then(function (response) { return response.json(); })
         .then(function (data) {
-          show(data.message, data.ok ? "ok" : "error");
-          if (data.ok) { email.value = ""; } else { email.focus(); }
+          if (data && data.ok === true) { showSuccess(address); } else { showError(data && data.result); }
         })
-        .catch(function () {
-          show("We couldn't reach the server, so you're not on the list yet. Check your connection and try again.", "error");
-        })
-        .finally(function () {
-          button.disabled = false;
-          button.textContent = label;
-        });
+        .catch(function () { showError("server_error"); })   // offline, timeout, or not JSON (e.g. a 502 from nginx)
+        .finally(function () { clearTimeout(timer); setBusy(false); });
+    });
+
+    document.getElementById("waitlist-again").addEventListener("click", function () {
+      success.hidden = true;
+      form.hidden = false;
+      email.value = "";
+      clearError();
+      email.focus();
     });
   })();
 </script>

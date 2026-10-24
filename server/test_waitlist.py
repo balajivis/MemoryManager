@@ -5,6 +5,7 @@ SQLite file, so nothing touches the production database.
 """
 
 import contextlib
+import http.client
 import io
 import json
 import os
@@ -14,8 +15,6 @@ import sys
 import tempfile
 import threading
 import unittest
-import urllib.error
-import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -49,13 +48,12 @@ class WaitlistServer(unittest.TestCase):
 
     def post(self, body, ctype="application/json", path="/api/waitlist", headers=None):
         data = json.dumps(body).encode() if ctype == "application/json" and not isinstance(body, bytes) else body
-        req = urllib.request.Request(self.url + path, data=data, method="POST",
-                                     headers={"Content-Type": ctype, **(headers or {})})
-        try:
-            with urllib.request.urlopen(req) as resp:
-                return resp.status, resp.headers, resp.read().decode()
-        except urllib.error.HTTPError as err:
-            return err.code, err.headers, err.read().decode()
+        conn = http.client.HTTPConnection("127.0.0.1", self.httpd.server_address[1])
+        conn.request("POST", path, body=data, headers={"Content-Type": ctype, **(headers or {})})
+        resp = conn.getresponse()   # http.client doesn't follow redirects, so 303s stay visible
+        result = resp.status, resp.headers, resp.read().decode()
+        conn.close()
+        return result
 
     def rows(self):
         with sqlite3.connect(self.db) as conn:
@@ -95,24 +93,24 @@ class Signups(WaitlistServer):
         self.assertEqual(self.post(b'["a list"]')[0], 400)
         self.assertEqual(self.post(b"x" * 5000)[0], 413)
         self.assertEqual(self.post({"email": "ada@example.com"}, path="/api/other")[0], 404)
-        with self.assertRaises(urllib.error.HTTPError) as ctx:
-            urllib.request.urlopen(self.url + "/api/waitlist")
-        self.assertEqual(ctx.exception.code, 405)
+        conn = http.client.HTTPConnection("127.0.0.1", self.httpd.server_address[1])
+        conn.request("GET", "/api/waitlist")
+        self.assertEqual(conn.getresponse().status, 405)
+        conn.close()
         self.assertEqual(self.rows(), [])
 
-    def test_form_post_without_javascript(self):
-        status, headers, body = self.post(b"email=ada%40example.com&website=",
-                                          ctype="application/x-www-form-urlencoded")
-        self.assertEqual(status, 200)
-        self.assertIn("text/html", headers["Content-Type"])
-        self.assertIn("You're on the list", body)
-        self.assertIn('href="/#waitlist"', body)
+    def test_form_post_without_javascript_redirects(self):
+        form = "application/x-www-form-urlencoded"
+        status, headers, _ = self.post(b"email=ada%40example.com&website=", ctype=form)
+        self.assertEqual((status, headers["Location"]), (303, "/joined.html"))
         self.assertEqual(self.rows(), [("ada@example.com", "draft")])
-
-    def test_form_post_error_page_escapes_nothing_from_input(self):
-        status, _, body = self.post(b"email=%3Cscript%3E", ctype="application/x-www-form-urlencoded")
-        self.assertEqual(status, 400)
-        self.assertNotIn("<script>", body)  # the page never echoes what was typed
+        status, headers, _ = self.post(b"email=not-an-email", ctype=form)
+        self.assertEqual((status, headers["Location"]), (303, "/join-error.html"))
+        status, headers, _ = self.post(b"email=bot%40example.com&website=spam", ctype=form)
+        self.assertEqual((status, headers["Location"]), (303, "/joined.html"))   # honeypot looks like success
+        self.assertEqual(len(self.rows()), 1)
+        for location in ("/joined.html", "/join-error.html"):
+            self.assertNotIn("@", location)   # nothing about the person in the URL
 
     def test_responses_are_not_cached(self):
         _, headers, _ = self.post({"email": "ada@example.com"})

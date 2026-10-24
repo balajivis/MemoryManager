@@ -22,7 +22,6 @@ Settings (environment variables):
 """
 
 import csv
-import html
 import json
 import os
 import re
@@ -54,13 +53,18 @@ CREATE TABLE IF NOT EXISTS waitlist (
 );
 """
 
-# What each outcome tells the person. Copy owner: ux (docs/ux/landing/copy.md).
+# What each outcome tells the person. Copy owner: ux (docs/ux/landing/copy.md §8).
 MESSAGES = {
-    "joined": "You're on the list. We'll email you when there's something to try.",
+    "joined": "You're on the list. We'll write to you when there's something to try.",
     "invalid_email": "That doesn't look like an email address. Check it and try again.",
-    "rate_limited": "Too many tries from your connection. Please wait a few minutes and try again.",
-    "server_error": "Something went wrong on our side, so you're not on the list yet. Please try again later.",
+    "rate_limited": "Too many tries from your connection. Wait a few minutes, then try again.",
+    "server_error": "Something went wrong, so you're not on the list yet. Please try again in a moment.",
 }
+
+# A plain form post (JavaScript off) is redirected to a static page. Nothing about the
+# person goes in the URL.
+FORM_REDIRECTS = {"joined": "/joined.html"}
+FORM_ERROR_PAGE = "/join-error.html"
 
 
 def connect(path=None):
@@ -138,35 +142,35 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path.split("?", 1)[0] != "/api/waitlist":
             return self.reply(404, "not_found")
-        wants_html = "application/json" not in self.headers.get("Content-Type", "")
+        is_form = "application/json" not in self.headers.get("Content-Type", "")
         try:
             length = int(self.headers.get("Content-Length") or 0)
         except ValueError:
             length = -1
         if length < 0:
-            return self.reply(400, "invalid_email", wants_html)
+            return self.reply(400, "invalid_email", is_form)
         if length > MAX_BODY:
             if length <= 65536:
                 self.rfile.read(length)   # drain it so the client gets the 413, not a reset
-            return self.reply(413, "invalid_email", wants_html)
-        fields = self.parse(self.rfile.read(length), wants_html)
+            return self.reply(413, "invalid_email", is_form)
+        fields = self.parse(self.rfile.read(length), is_form)
         if fields is None:
-            return self.reply(400, "invalid_email", wants_html)
+            return self.reply(400, "invalid_email", is_form)
         if fields.get(HONEYPOT):
-            return self.reply(200, "joined", wants_html)   # pretend success, store nothing
+            return self.reply(200, "joined", is_form)   # pretend success, store nothing
         # nginx sets X-Real-IP; the address is used as a rate-limit key in memory only
         client = self.headers.get("X-Real-IP") or self.client_address[0]
         if not self.limiter.allow(client):
-            return self.reply(429, "rate_limited", wants_html)
+            return self.reply(429, "rate_limited", is_form)
         email = normalize_email(fields.get("email"))
         if email is None:
-            return self.reply(400, "invalid_email", wants_html)
+            return self.reply(400, "invalid_email", is_form)
         try:
             add_signup(email, self.db_path)
         except sqlite3.Error as exc:
             sys.stderr.write(f"waitlist: database error: {type(exc).__name__}\n")
-            return self.reply(500, "server_error", wants_html)
-        return self.reply(200, "joined", wants_html)
+            return self.reply(500, "server_error", is_form)
+        return self.reply(200, "joined", is_form)
 
     def do_GET(self):
         self.reply(405, "not_found")
@@ -183,14 +187,17 @@ class Handler(BaseHTTPRequestHandler):
         except (UnicodeDecodeError, ValueError):
             return None
 
-    def reply(self, status, outcome, as_html=False):
+    def reply(self, status, outcome, as_form=False):
+        if as_form:
+            self.send_response(303)
+            self.send_header("Location", FORM_REDIRECTS.get(outcome, FORM_ERROR_PAGE))
+            self.send_header("Content-Length", "0")
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            return
         message = MESSAGES.get(outcome, "")
-        if as_html:
-            body = result_page(outcome, message).encode("utf-8")
-            ctype = "text/html; charset=utf-8"
-        else:
-            body = json.dumps({"ok": status == 200, "result": outcome, "message": message}).encode("utf-8")
-            ctype = "application/json"
+        body = json.dumps({"ok": status == 200, "result": outcome, "message": message}).encode("utf-8")
+        ctype = "application/json"
         self.send_response(status)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
@@ -199,36 +206,6 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Allow", "POST")
         self.end_headers()
         self.wfile.write(body)
-
-
-def result_page(outcome, message):
-    """Shown only when the form is posted without JavaScript."""
-    title = "You're on the list" if outcome == "joined" else "Not signed up yet"
-    return f"""<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex">
-<title>{html.escape(title, quote=False)} · MemoryManager</title>
-<link rel="stylesheet" href="/fonts/fonts.css">
-<style>
-  :root {{ --bg: #faf8f4; --ink: #1c1b19; --muted: #6b675f; --accent: #1f5e5b; color-scheme: light; }}
-  @media (prefers-color-scheme: dark) {{ :root {{ --bg: #141413; --ink: #edeae4; --muted: #a39e94; --accent: #6fc2ba; color-scheme: dark; }} }}
-  body {{ margin: 0; min-height: 100vh; display: grid; place-content: center; gap: 12px; padding: 24px 16px;
-         background: var(--bg); color: var(--ink); font: 400 1.0625rem/1.6 "Inter", system-ui, sans-serif; text-align: center; }}
-  h1 {{ margin: 0; font: 600 2rem/1.15 "Newsreader", Georgia, serif; }}
-  p {{ margin: 0; color: var(--muted); max-width: 32rem; }}
-  a {{ color: var(--accent); }}
-</style>
-</head>
-<body>
-  <h1>{html.escape(title, quote=False)}</h1>
-  <p>{html.escape(message, quote=False)}</p>
-  <p><a href="/#waitlist">Back to MemoryManager</a></p>
-</body>
-</html>
-"""
 
 
 def serve():

@@ -16,6 +16,8 @@ The service never logs email addresses. The client IP is used only as an in-memo
 
 A repeat sign-up gets the same answer as a new one, so the form can't be used to check whether someone is on the list.
 
+With JavaScript on, the page posts JSON and shows the answer inline. With JavaScript off, the form posts normally, and the service answers with a 303 redirect to `/joined.html` or `/join-error.html`. Nothing about the person goes in the URL.
+
 ## Run it locally
 
 ```sh
