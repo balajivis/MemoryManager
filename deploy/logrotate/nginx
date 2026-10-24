@@ -1,12 +1,12 @@
 # nginx log rotation for dev-vm. Installed by deploy/deploy.sh to /etc/logrotate.d/nginx.
-# Daily rotation, 7 rotated files kept, then deleted (privacy policy: "deleted after 7 days").
-# The access log is already anonymized by nginx (log_format anon). The error log can't be
-# reformatted, so the just-rotated copy has its IPs shortened the same way (within 24 hours).
+# Daily rotation with 'rotate 6': today's file plus 6 rotated files, so no entry is kept
+# longer than 7 days (privacy policy: "deleted after 7 days"). Both logs hold anonymized
+# IPs only: nginx anonymizes the access log, rsyslog's mmanon anonymizes the error log.
 
 /var/log/nginx/*.log {
 	daily
 	missingok
-	rotate 7
+	rotate 6
 	compress
 	delaycompress
 	notifempty
@@ -19,11 +19,19 @@
 	endscript
 	postrotate
 		invoke-rc.d nginx rotate >/dev/null 2>&1
-		if [ -f /var/log/nginx/error.log.1 ]; then \
-			sed -i -E \
-				-e 's/([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})\.[0-9]{1,3}/\1.0/g' \
-				-e 's/(client: [0-9a-fA-F]+:[0-9a-fA-F]+:[0-9a-fA-F]+):[0-9a-fA-F:]*/\1::/g' \
-				/var/log/nginx/error.log.1; \
-		fi
+	endscript
+}
+
+/var/log/nginx-errors/*.log {
+	daily
+	missingok
+	rotate 6
+	compress
+	delaycompress
+	notifempty
+	create 0640 syslog adm
+	sharedscripts
+	postrotate
+		/usr/lib/rsyslog/rsyslog-rotate
 	endscript
 }

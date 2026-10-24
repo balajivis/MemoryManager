@@ -59,13 +59,19 @@ if [ ! -f "$cert" ]; then   # also prove the HTTPS vhost parses, using a throwaw
   sudo nginx -t -q -c "$t/nginx.conf" || { echo "candidate HTTPS vhost FAILED nginx -t"; exit 1; }
 fi
 sudo logrotate -d "$src/logrotate/nginx" >/dev/null 2>&1 || { echo "candidate logrotate config FAILED"; exit 1; }
-echo "candidate OK: nginx -t (HTTP and HTTPS vhosts) and logrotate -d pass; will install $(basename "$site")"
+sudo rsyslogd -N1 -f "$src/rsyslog/30-nginx-anon.conf" >/dev/null 2>&1 \
+  || { echo "candidate rsyslog config FAILED"; sudo rsyslogd -N1 -f "$src/rsyslog/30-nginx-anon.conf"; exit 1; }
+echo "candidate OK: nginx -t (HTTP and HTTPS vhosts), logrotate -d and rsyslogd -N1 pass; will install $(basename "$site")"
 [ "$mode" = install ] || exit 0
 
 # 2. Back up, install, re-test the live config, reload. Restore the backup on any failure.
 bak="/var/backups/mm-nginx-$(date -u +%Y%m%dT%H%M%SZ).tgz"
-sudo tar -czf "$bak" -C / etc/nginx etc/logrotate.d/nginx 2>/dev/null
-restore() { echo "install FAILED; restoring $bak"; sudo rm -rf /etc/nginx; sudo tar -xzf "$bak" -C /; sudo nginx -t -q && sudo systemctl reload nginx; exit 1; }
+sudo tar --ignore-failed-read -czf "$bak" -C / etc/nginx etc/logrotate.d/nginx etc/rsyslog.d/30-nginx-anon.conf 2>/dev/null
+restore() {
+  echo "install FAILED; restoring $bak"
+  sudo rm -rf /etc/nginx; sudo rm -f /etc/rsyslog.d/30-nginx-anon.conf; sudo tar -xzf "$bak" -C /
+  sudo systemctl restart rsyslog; sudo nginx -t -q && sudo systemctl reload nginx; exit 1
+}
 trap restore ERR
 sudo install -m 644 "$src/nginx/nginx.conf" /etc/nginx/nginx.conf
 sudo install -d /etc/nginx/snippets /var/www/letsencrypt
@@ -76,9 +82,30 @@ sudo ln -sfn /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
 sudo ln -sfn /etc/nginx/sites-available/memorymanager /etc/nginx/sites-enabled/memorymanager
 sudo rm -f /etc/nginx/conf.d/hardening.conf   # superseded by server_tokens in nginx.conf
 sudo install -m 644 "$src/logrotate/nginx" /etc/logrotate.d/nginx
+sudo install -d -o syslog -g adm -m 750 /var/log/nginx-errors
+sudo install -m 644 "$src/rsyslog/30-nginx-anon.conf" /etc/rsyslog.d/30-nginx-anon.conf
+sudo rsyslogd -N1 >/dev/null 2>&1
+sudo systemctl restart rsyslog          # the anonymizing error-log receiver must be up before nginx reloads
 sudo nginx -t -q
 sudo systemctl reload nginx
 trap - ERR
+
+# 3. Self-test the privacy guarantees with documentation-only addresses (RFC 5737).
+sleep 1
+logger --udp -n 127.0.0.1 -P 5514 -t nginx "deploy-selftest $commit client: 198.51.100.123, server: selftest"
+curl -s -o /dev/null -H "Host: $domain" "http://127.0.0.1/?deploy-selftest-$commit"
+sleep 1
+if sudo grep -q "deploy-selftest $commit client: 198.51.100.0," /var/log/nginx-errors/error.log \
+   && ! sudo grep -q "198.51.100.123" /var/log/nginx-errors/error.log; then
+  echo "selftest OK: error log stores 198.51.100.0, not the full address"
+else
+  echo "SELFTEST FAILED: error log is not anonymized"; exit 1
+fi
+if sudo tail -n 200 /var/log/nginx/access.log | grep "deploy-selftest-$commit" | grep -q "^127\.0\.0\.0 "; then
+  echo "selftest OK: access log stores 127.0.0.0, not 127.0.0.1"
+else
+  echo "SELFTEST FAILED: access log is not anonymized"; exit 1
+fi
 echo "$(date -u +%FT%TZ) server $commit $(basename "$site")" | sudo tee -a /etc/nginx/DEPLOYS >/dev/null
 echo "installed server config from $commit (backup: $bak)"
 '
