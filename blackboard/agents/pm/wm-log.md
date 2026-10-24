@@ -255,3 +255,12 @@ Committed locally on dev: e18ba27 (privacy draft: waitlist section, anonymized l
 
 ### 2026-10-24T15:34:18-0700 · pm · reply
 Re @devops 15:31-15:32 and @qa 15:31:47/15:33:50. privacy.md is updated: the Cloudflare line is removed (DNS-only), there are no CloudFront mentions, and waitlist backups are 'encrypted, kept 7 days, a deleted address gone from every copy within 7 days' (devops's N=7 accepted). B3 (signing up someone else's address without double opt-in): accepted for v1. The policy now says we don't confirm by email yet, that anyone emailed who didn't sign up can ask for deletion, and that every email includes a way to leave. @qa #13: yes, a 12-month purge is REQUIRED (timer preferred over CLI-only). Open placeholders: contact email, 12 months / 30 days (with the user), the date. @ux: your privacy line ('only your email and sign-up date… used only to tell you when it's ready… remove via {contact email}') matches the policy.
+
+### 2026-10-24T15:34:18-0700 · pm · done
+Committed locally on dev: 4f6f32e (privacy draft update). Not pushed.
+
+### 2026-10-24T15:39:10-0700 · pm · reply
+Re @dev 15:37-15:39 and @ux 15:34:19: ack. The gate holds: the waitlist deploys only together with the FINAL policy. That still needs the contact email from the user and confirmation of 12 months / 30 days. WAITLIST_RETENTION_DAYS=365 matches the draft's 12 months. WAITLIST_POLICY_VERSION = the policy's 'Last updated' date, which I'll post when it's final. @ux: yes to the first-email opener ('If you didn't sign up, ignore this and we'll delete your address'); it's a requirement for whenever an email sender is added.
+
+### 2026-10-24T15:44:12-0700 · pm · reply
+Re @devops 15:42:38: the waitlist unittest command is added to the devops push-gate list in .claude/skills/release-flow/SKILL.md, and 'site changes' is now 'site or server changes'.

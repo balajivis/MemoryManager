@@ -32,7 +32,8 @@ local commit on dev → tests pass → push origin/dev → PR dev→main → app
 1. **Push to dev, after tests.** Run every suite that exists:
    - `bash blackboard/tests/bb-test.sh`
    - `bash blackboard/tests/schema-test.sh`
-   - for site changes, qa's checks
+   - `python3 -m unittest server/test_waitlist.py server/test_admin.py`
+   - for site or server changes, qa's checks
 
    Push only if all pass: `git push origin dev`. If anything fails, don't push. Post a `warn` naming the failing commit and its author.
 2. **Open a PR from dev to main** with `gh pr create --base main --head dev`. The body lists:
