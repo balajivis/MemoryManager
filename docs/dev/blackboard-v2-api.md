@@ -108,3 +108,7 @@ The board page shows the latest summary as a card (also clickable: opens the lis
 - The 120 s cap counts from `/voice/floor/start`; after stop or cap the holder keeps the floor for a 20 s upload grace.
 - `POST /voice/notes` accepts `audio/webm` and `audio/mp4` (Safari); magic bytes checked for both; audio is served with its stored type.
 - `floor` WS messages add `reason` (posted, cancelled, cap, skipped_timeout, admin_skip, disconnect, admin_clear) and `userId`.
+
+## Addendum 3: shapes as built (backend core)
+
+`GET /board` tiles = counts plus `cards:[{key,title,count}]`. `GET /bb/export` = `{logs:{name:markdown}}`. `POST /summaries` and `GET /summaries/:day` return `{summary}`; the list returns `{summaries}`. `voice_notes.id` and `messages.voice_note_id` are TEXT uuids. `requireSession` answers 403 to agent tokens. Items link to feed entries when an entry body contains `#<id>` or the item title.
