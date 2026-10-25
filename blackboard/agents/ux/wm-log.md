@@ -171,3 +171,26 @@ Fix 1 (visual): the success line breaks the address mid-word ('sam@' / 'e.com').
 Fix 2 (state): nginx limit_req answers with its own HTML page (503 by default), so response.json() throws and people see 'Something went wrong' instead of the rate-limit message. In the first .then, check if (response.status === 429) return {ok:false, result:'rate_limited'} before parsing. @devops: set limit_req_status 429 in the /api/waitlist location so the two line up.
 Optional: give the field a visible error cue as well (input[aria-invalid=true]{border-color:var(--ink)}), since right now only the message box changes.
 These go into your next local commit on dev; there's no deploy until pm's gate is met.
+
+### 2026-10-24T15:41:00-0700 · ux · done
+Committed locally on dev: eda4f27. Adds copy.md §14, the first-email opener as a requirement per @pm 15:39:10 ('If you didn't sign up… ignore this and we'll delete your address. [Remove me]'), plus my wm-log with the waitlist review. Not pushed.
+
+### 2026-10-25T10:16:27-0700 · ux · done
+Re @dev 15:44:22 (4537d34): ux re-check PASS. I rendered at a true 375px in light mode. The success line now drops the address to its own line whole, and a 36-character test address breaks only at its hyphen, which is fine. The invalid state shows the ink border on the field plus the message box. The 429 mapping is in the code (line 422), and devops has limit_req_status 429. Nothing more from ux on the waitlist. It ships with @pm's final policy (the gate).
+
+### 2026-10-25T10:24:01-0700 · ux · obs
+Re @pm 10:18:54 (HITL team board): ux can do a usability pass if you or the user want one: first-run clarity for a human joining, how 'needs a human' stands out, the @mention flow, and mobile and dark mode. I'm not starting it unasked. Also seconding @devops 10:20:10: if it goes public, an anyone-can-edit directive and strategy is a UX risk too, since there's no way to tell who changed the pinned directive. Consider read-only for viewers, or an 'edited by X, time' line on the directive.
+
+### 2026-10-25T10:28:57-0700 · ux · claim
+Taking the usability pass on the HITL team board (re @pm 10:24:14): tools/hitl-board/index.html plus the live artifact. Covers first-run join, 'needs a human' prominence, the @mention flow, mobile and dark mode. Findings go to @pm; ux won't edit the file. Noted: the directive and strategy already show who and when, and outside visitors are view-only.
+
+### 2026-10-25T10:30:27-0700 · ux · done
+@pm HITL board usability review is done: docs/ux/hitl-board-review.md (cb96b6f; code read plus offline renders at 1366 and 375px, light and dark). Top items, each with a drop-in fix in the doc:
+MUST 1: an empty 'DIRECTIVE · PINNED' banner always shows when nothing is pinned. .directive-banner{display:grid} beats the hidden attribute. Add [hidden]{display:none!important}.
+HIGH 2: join is buried (bottom of the Team panel, sixth panel down on mobile, next to Add agent). Add a first-run strip 'You're viewing the team board. Join to chat and take on work [role][Join]' and put Add agent behind a disclosure.
+HIGH 3: 'Needs a human' never says WHAT is needed. Prompt for a one-line 'Needed: …' when status becomes waiting or blocked, and show it bold on the item and the row.
+HIGH 4: when non-empty, show Needs a human first, and make the Blocked and Waiting stat tiles link to it.
+HIGH 5: info notices are red (e.g. '@pm is an external session…'), so they read as errors. Make info neutral, and combine multiple external mentions into one notice; each currently overwrites the last.
+HIGH 6: view-only visitors see forms that fail on submit. Hide them and show 'View only. Ask the owner for Contributor access.'
+MEDIUM: aria-live on a chat list that's fully rebuilt every snapshot (re-announces everything), the waiting-state name used 3 ways (use 'Needs a human'), the empty Features gap, and 'In progress' counting blocked items (call it 'Open').
+What works: who and when on the directive and strategy, the step bar plus labels, complete dark tokens, and a clean 375px stack.
