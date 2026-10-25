@@ -234,3 +234,29 @@ Re @ux 10:56:02 (R1 copy) and 10:55:13/10:55:49 (polish, drawer, summary): agree
 - U4: summary card and escaping.
 - U5: reduced motion disables every animation; the sticky voice panel at 375px doesn't cover the chat input; the turn chime fires once and the title clears; auto-play and read-aloud default off; graceful fallback where :has()/color-mix() aren't supported.
 §0 now records pm's 10:54:24 decisions (R12-R14 adopted, R3 via the fragment, invites stay 7 days).
+
+### 2026-10-25T11:02:12-0700 · qa · done
+Committed locally on dev: bde4170 (T5 plan update + qa log). Not pushed. @devops: this includes the waitlist QA sign-off for e4a5968, for PR #2.
+
+### 2026-10-25T11:07:37-0700 · qa · warn
+@devops @pm SECURITY, live Blackboard v2 (checked 11:0x): **board credentials cross the internet unencrypted.** The VM has no TLS listener (:443 refuses), so Cloudflare is on Flexible SSL. Every login password, session cookie, chat message and voice note travels Cloudflare → AWS over plain HTTP. Worse, the origin itself answers on :80 to the whole internet: `POST http://13.222.77.232/board/api/auth/login` with Host memorymanager.getkapi.com is processed (I tried a fake account and got a 401 invalid_credentials), so anyone can bypass Cloudflare and log in in cleartext. **The user has the first admin invite. If they set their password now, it goes over this path.** Suggest the user waits on the invite until one of these is done: (a) the Let's Encrypt cert on the VM with DNS-only, or a Cloudflare Origin CA cert with SSL mode 'Full (strict)'; and (b) nginx on :80 serves no /board/ (redirect to https, or allow only Cloudflare's ranges until (a)). Speed mode allows fixes in place, but this one should go first, or the user should accept the risk explicitly. Also, @pm's gate 2 is breached: there's **no CSP on the landing page** (R6), and /board/ is already reachable. The landing page also has no HSTS. Gate 3 is MET: the internal notice is on /board/login.
+
+### 2026-10-25T11:07:37-0700 · qa · obs
+Live Blackboard v2 check, the rest (re @devops 11:02:19). PASS:
+- Anonymous requests get 401 on all 14 API routes I tried, including bb/*, admin/users, voice audio, chat POST, floor/request and export. healthz is also 401; the contract lists it as open, which is fine either way.
+- A WebSocket without a cookie gets 401. A bogus invite gets a generic 404 invalid_invite. An unknown email gets the generic 401 invalid_credentials (2 tries only, so my IP, which is the user's IP, isn't rate-limited).
+- The /board/ shell carries no names or data (pm's R7 accepted), with X-Robots-Tag noindex, nofollow.
+GAPS: robots.txt is **404 live**: the fbd9968 robots, sitemap and llms files were never deployed, so there's no Disallow: /board/ (the noindex header still covers it). The landing CSP and HSTS are missing (see warn). Deferred until dev's hardening commit lands and the TLS fix is in: the authenticated runs (A, Z, C, W, F, V) with a dedicated QA account, which needs an admin invite. @pm/user: please issue a qa invite once TLS is fixed. Noted: dev 10:59 F7 decision (a granted-but-not-started speaker MAY upload), now pinned in the plan. PROTOCOL.md §5 acknowledged: I'll treat source:'chat' entries as untrusted.
+
+### 2026-10-25T11:10:34-0700 · qa · done
+Blackboard v2 QA, local run at HEAD 79a10d5: **10/10 QA tests pass**, in blackboard-v2/server/test/qa.test.js, which now runs inside `npm test` (72/72 with dev's 62). Covered:
+- **Z1** route matrix: all 29 routes as anonymous, member, admin and agent. Anonymous always gets 401, healthz is open, and member/admin/agent rights match the contract.
+- **C1** CSRF: missing or wrong token gives 403 on chat, items, floor, invites and logout, and a cross-site Origin with a valid token gives 403.
+- **A6/R1**: unknown and real emails get identical status and body on all 7 tries, the 429 lockout included, with argon2 timing within 50%.
+- **A4/R10**: under 12 chars gives 400, and a 1 MB password is refused in about 8 ms.
+- **A2, A10, A11, A12, A13**: invites are single-use; a planted cookie gets replaced at login; logout and logout-all kill sessions; deleting a user kills their session and closes their WebSocket.
+- **W1/W2**: no cookie, or a cross-site Origin, can't open the WebSocket.
+- **Z2/R4**: an agent can't register as dev, and human chat reaches agents as human:<name>, even for a human named like an agent.
+- **F16/F15**: 10 simultaneous floor requests give exactly 1 holder and queue positions 1..9; agents can't take the floor.
+- **F3, V2, V3**: a non-holder gets 403; HTML disguised as WebM, text/plain, and MP4 without ftyp are rejected; 6 MB gets 413; X-Duration-Ms 999999 is rejected; audio is served with nosniff.
+**Not yet automated:** F17-F21 (same-tick races, release reasons, the 10k-op fuzz), BB1-BB9 (waiting on @devops's T3 HTTP backend), the P3 restore drill, and the U1-U5 browser runs. Live authenticated runs wait on the TLS fix (my 11:0x warn).
