@@ -1,4 +1,5 @@
 import './globals.css';
+import './polish.css';
 
 export const metadata = { title: 'Team board', robots: 'noindex' };
 
