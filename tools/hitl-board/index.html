@@ -1,0 +1,604 @@
+<title>HITL Team Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;700&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ground: #EEF1F4; --surface: #FFFFFF; --sunk: #F6F8FA; --ink: #142233; --muted: #586679; --faint: #8794A3; --line: #D8DEE5;
+    --accent: #1D5C8F; --accent-soft: #E2EDF6; --attn: #A85A06; --attn-soft: #FBEEDD; --block: #B42B23; --block-soft: #FBE5E3;
+    --ok: #1E7449; --ok-soft: #E1F2E8; --agent: #5B4FA0; --agent-soft: #ECEAF7;
+    --display: "Schibsted Grotesk", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    --body: "Source Sans 3", "Helvetica Neue", Arial, system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0F151C; --surface: #161E27; --sunk: #121920; --ink: #E6ECF2; --muted: #A0ADBB; --faint: #6E7C8B; --line: #26313D;
+      --accent: #7DB6E6; --accent-soft: #1A2C3D; --attn: #F0A852; --attn-soft: #3A2A16; --block: #F08A82; --block-soft: #3D1F1D;
+      --ok: #6FCF97; --ok-soft: #163125; --agent: #B3A9F0; --agent-soft: #262341;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0F151C; --surface: #161E27; --sunk: #121920; --ink: #E6ECF2; --muted: #A0ADBB; --faint: #6E7C8B; --line: #26313D;
+    --accent: #7DB6E6; --accent-soft: #1A2C3D; --attn: #F0A852; --attn-soft: #3A2A16; --block: #F08A82; --block-soft: #3D1F1D;
+    --ok: #6FCF97; --ok-soft: #163125; --agent: #B3A9F0; --agent-soft: #262341;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--ground); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.45; padding-inline: 20px; padding-block: 0 48px; }
+  .wrap { max-width: 1240px; margin-inline: auto; display: grid; gap: 18px; }
+  .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .sr { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+
+  .top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-block: 18px 2px; }
+  .brand { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .brand h1 { font-family: var(--display); font-size: 24px; margin: 0; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); font-size: 14px; }
+  .status { font-size: 13px; color: var(--muted); display: inline-flex; gap: 8px; align-items: center; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); display: inline-block; }
+  .dot.on { background: var(--ok); }
+
+  .directive-banner { border: 1px solid var(--attn); background: var(--attn-soft); color: var(--ink); border-radius: 12px; padding: 12px 16px; display: grid; gap: 4px; }
+  .directive-banner .k { font: 500 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--attn); }
+
+  .summary { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .stat { background: var(--surface); padding: 12px 16px; display: grid; gap: 2px; }
+  .stat .n { font-family: var(--display); font-size: 26px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .stat .k { font-size: 13px; color: var(--muted); }
+  .stat.block .n { color: var(--block); } .stat.attn .n { color: var(--attn); } .stat.ok .n { color: var(--ok); }
+
+  .main { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+  .col { display: grid; gap: 18px; min-width: 0; }
+  section.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; min-width: 0; }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .panel-head h2 { font-family: var(--display); font-size: 16.5px; margin: 0; }
+  .hint { font-size: 13px; color: var(--muted); }
+  .empty { padding: 16px; color: var(--muted); font-size: 14px; }
+
+  .chip { display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 11px; letter-spacing: .04em; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .chip.block { color: var(--block); background: var(--block-soft); } .chip.attn { color: var(--attn); background: var(--attn-soft); }
+  .chip.ok { color: var(--ok); background: var(--ok-soft); } .chip.info { color: var(--accent); background: var(--accent-soft); }
+  .chip.agent { color: var(--agent); background: var(--agent-soft); } .chip.idle { color: var(--muted); background: var(--sunk); border: 1px solid var(--line); }
+
+  button.btn { font: 600 13px/1 var(--body); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--sunk); color: var(--ink); cursor: pointer; white-space: nowrap; }
+  button.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+  button.btn.small { padding: 5px 8px; font-size: 12px; }
+  button.btn:disabled { opacity: .5; cursor: default; }
+  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  input, select, textarea { font: 400 14px/1.4 var(--body); color: var(--ink); background: var(--sunk); border: 1px solid var(--muted); border-radius: 8px; padding: 7px 9px; min-width: 0; }
+  textarea { resize: vertical; width: 100%; }
+  form.inline { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 16px; border-top: 1px solid var(--line); align-items: center; }
+  form.inline input[type=text] { flex: 1 1 160px; }
+
+  /* Items */
+  .items { list-style: none; margin: 0; padding: 0; }
+  .items li { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 6px 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  .items li:last-child { border-bottom: 0; }
+  .i-title { font-weight: 600; overflow-wrap: anywhere; }
+  .i-meta { font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+  .steps { grid-column: 1 / -1; display: flex; gap: 4px; }
+  .steps span { flex: 1; height: 6px; border-radius: 3px; background: var(--line); }
+  .steps span.on { background: var(--accent); }
+  .steps span.wait { background: var(--attn); }
+  .steps span.blk { background: var(--block); }
+  .step-labels { grid-column: 1 / -1; display: flex; justify-content: space-between; font: 400 11px/1 var(--mono); color: var(--faint); }
+  .i-act { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; align-items: start; }
+
+  .attn-list { list-style: none; margin: 0; padding: 0; }
+  .attn-list li { display: grid; grid-template-columns: 4px 1fr; gap: 0 12px; padding: 12px 16px 12px 0; border-bottom: 1px solid var(--line); }
+  .attn-list li:last-child { border-bottom: 0; }
+  .sev { border-radius: 0 3px 3px 0; background: var(--attn); }
+  .sev.block { background: var(--block); }
+
+  .features { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; padding: 14px 16px 16px; }
+  .feat { border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; gap: 6px; align-content: start; background: var(--sunk); }
+  .feat .f-name { font-family: var(--display); font-weight: 700; font-size: 15px; overflow-wrap: anywhere; }
+  .feat .f-meta { font-size: 12.5px; color: var(--muted); }
+
+  /* Roster */
+  .roster { list-style: none; margin: 0; padding: 4px 0; }
+  .roster li { display: grid; grid-template-columns: 32px 1fr auto; gap: 10px; align-items: center; padding: 8px 16px; }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: var(--sunk); border: 1px solid var(--line); }
+  .bot { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; font: 600 11px/1 var(--mono); color: var(--agent); background: var(--agent-soft); }
+  .r-name { font-weight: 600; overflow-wrap: anywhere; }
+  .r-doing { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+  .group { padding: 10px 16px 2px; font: 500 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+
+  /* Chat */
+  .chat { display: flex; flex-direction: column; }
+  .msgs { list-style: none; margin: 0; padding: 8px 16px; max-height: 460px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+  .msg { display: grid; grid-template-columns: 28px 1fr; gap: 10px; }
+  .msg .avatar, .msg .bot { width: 28px; height: 28px; font-size: 10px; }
+  .m-head { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; font-size: 13px; }
+  .m-name { font-weight: 600; }
+  .m-time { font-family: var(--mono); font-size: 11.5px; color: var(--faint); }
+  .m-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .m-text .mention { color: var(--accent); font-weight: 600; }
+  .msg.agent .m-name { color: var(--agent); }
+  .msg.pending .m-text { color: var(--muted); font-style: italic; }
+  .composer { border-top: 1px solid var(--line); padding: 10px 16px 14px; display: grid; gap: 8px; }
+  .composer .row { display: flex; gap: 8px; }
+  .composer input { flex: 1; }
+  .mentions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .mentions button { font: 500 12px/1 var(--mono); padding: 4px 8px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--agent); cursor: pointer; }
+
+  .dock { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 18px; }
+  .dock form { display: grid; gap: 10px; padding: 12px 16px 16px; }
+  .dock .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+  .note { font-size: 12.5px; color: var(--muted); }
+  .strategy-text { white-space: pre-wrap; margin: 0; padding: 12px 16px 0; max-width: 65ch; }
+  .notice { font-size: 13px; color: var(--block); }
+
+  footer { font-size: 12.5px; color: var(--faint); }
+
+  @media (max-width: 960px) { .main, .dock { grid-template-columns: 1fr; } }
+  @media (max-width: 560px) {
+    body { padding-inline: 16px; }
+    .summary { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .items li { grid-template-columns: 1fr; }
+    .i-act { justify-content: flex-start; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>HITL team board</h1>
+      <span class="sub" id="team-count">Humans and agents, one board</span>
+    </div>
+    <span class="status" id="conn"><span class="dot" id="conn-dot"></span><span id="conn-text">Connecting…</span></span>
+  </header>
+
+  <div class="directive-banner" id="directive-banner" hidden>
+    <span class="k">Directive · pinned</span>
+    <span id="directive-banner-text"></span>
+    <span class="note" id="directive-banner-meta"></span>
+  </div>
+
+  <div class="summary" role="list" aria-label="Board summary">
+    <div class="stat block" role="listitem"><span class="n" id="n-block">0</span><span class="k">Blocked</span></div>
+    <div class="stat attn" role="listitem"><span class="n" id="n-wait">0</span><span class="k">Waiting on a human</span></div>
+    <div class="stat" role="listitem"><span class="n" id="n-wip">0</span><span class="k">In progress</span></div>
+    <div class="stat ok" role="listitem"><span class="n" id="n-done">0</span><span class="k">Delivered</span></div>
+  </div>
+
+  <div class="main">
+    <div class="col">
+      <section class="panel" aria-labelledby="h-wip">
+        <div class="panel-head"><h2 id="h-wip">Work items in progress</h2><span class="hint">claimed → built → tested → PR → merged → live</span></div>
+        <ul class="items" id="items"></ul>
+        <div class="empty" id="items-empty">No work items yet. Add the first one below.</div>
+        <form class="inline" id="item-form">
+          <label class="sr" for="item-title">New work item</label>
+          <input type="text" id="item-title" placeholder="New work item, e.g. Waitlist with SQLite" maxlength="140">
+          <label class="sr" for="item-owner">Owner</label>
+          <select id="item-owner"></select>
+          <button class="btn primary" type="submit">Add item</button>
+        </form>
+      </section>
+
+      <section class="panel" aria-labelledby="h-attn">
+        <div class="panel-head"><h2 id="h-attn">Needs a human</h2><span class="hint">Blocked first</span></div>
+        <ul class="attn-list" id="attn"></ul>
+        <div class="empty" id="attn-empty">Nothing is waiting on a human.</div>
+      </section>
+
+      <section class="panel" aria-labelledby="h-feat">
+        <div class="panel-head"><h2 id="h-feat">Features delivered</h2><span class="hint">Items that reached live</span></div>
+        <div class="features" id="features"></div>
+        <div class="empty" id="features-empty">Nothing delivered yet.</div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="panel" aria-labelledby="h-team">
+        <div class="panel-head"><h2 id="h-team">Team</h2><span class="hint" id="online-hint"></span></div>
+        <ul class="roster" id="roster"></ul>
+        <form class="inline" id="join-form">
+          <label class="sr" for="join-role">Your role</label>
+          <input type="text" id="join-role" placeholder="Your role, e.g. Founder" maxlength="60">
+          <button class="btn primary" type="submit" id="join-btn">Join the team</button>
+        </form>
+        <form class="inline" id="agent-form">
+          <label class="sr" for="agent-name">Agent name</label>
+          <input type="text" id="agent-name" placeholder="Agent name, e.g. researcher" maxlength="24" style="flex:1 1 120px">
+          <label class="sr" for="agent-role">Agent role</label>
+          <input type="text" id="agent-role" placeholder="What it does" maxlength="120" style="flex:2 1 160px">
+          <label class="sr" for="agent-kind">How it works</label>
+          <select id="agent-kind">
+            <option value="claude">Answers in chat</option>
+            <option value="external">External session</option>
+          </select>
+          <button class="btn" type="submit">Add agent</button>
+        </form>
+      </section>
+
+      <section class="panel chat" aria-labelledby="h-chat">
+        <div class="panel-head"><h2 id="h-chat">Team chat</h2><span class="hint">@mention an agent to bring it in</span></div>
+        <ul class="msgs" id="msgs" aria-live="polite"></ul>
+        <div class="empty" id="msgs-empty">No messages yet. Say hello, or @mention an agent.</div>
+        <form class="composer" id="chat-form">
+          <div class="mentions" id="mention-chips" aria-label="Mention an agent"></div>
+          <div class="row">
+            <label class="sr" for="chat-input">Message the team</label>
+            <input type="text" id="chat-input" placeholder="Message the team" maxlength="2000" autocomplete="off">
+            <button class="btn primary" type="submit">Send</button>
+          </div>
+          <span class="notice" id="chat-notice" role="status"></span>
+        </form>
+      </section>
+    </div>
+  </div>
+
+  <div class="dock">
+    <section class="panel" aria-labelledby="h-dir">
+      <div class="panel-head"><h2 id="h-dir">Directive</h2><span class="hint">Pinned for everyone until cleared</span></div>
+      <form id="dir-form">
+        <label for="dir-text" class="note">Tell the team, agents included, what to do next.</label>
+        <textarea id="dir-text" rows="3" maxlength="600" placeholder="e.g. Stop new features. Ship the waitlist with the final privacy policy, then pause for review."></textarea>
+        <div class="row">
+          <label class="sr" for="dir-scope">Applies to</label>
+          <select id="dir-scope"></select>
+          <span style="display:flex;gap:8px">
+            <button class="btn" type="button" id="dir-clear">Clear</button>
+            <button class="btn primary" type="submit">Pin directive</button>
+          </span>
+        </div>
+      </form>
+    </section>
+    <section class="panel" aria-labelledby="h-strat">
+      <div class="panel-head"><h2 id="h-strat">Strategy update</h2><span class="hint" id="strat-meta"></span></div>
+      <p class="strategy-text" id="strat-text">No strategy written yet.</p>
+      <form id="strat-form">
+        <label for="strat-input" class="note">Update the strategy. The previous version is replaced.</label>
+        <textarea id="strat-input" rows="3" maxlength="1500"></textarea>
+        <div class="row"><span></span><button class="btn" type="submit">Save strategy</button></div>
+      </form>
+    </section>
+  </div>
+
+  <footer id="foot">Shared board: everything here is saved and visible to everyone who can open it. Agents marked "answers in chat" reply using the sender's Claude account.</footer>
+</div>
+
+<script>
+(function () {
+  var STEPS = ["claimed", "built", "tested", "PR", "merged", "live"];
+  var S = { humans: [], agents: [], items: [], msgs: [], directive: null, strategy: null, me: null, online: new Set(), canWrite: null, profiles: {} };
+  var db = null, user = null, sample = null, room = null;
+  var pendingAgents = {}; // agentName -> true while replying (this tab only)
+  var $ = function (id) { return document.getElementById(id); };
+
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function ago(ts) {
+    if (!ts) return "";
+    var d = Math.max(0, Date.now() - ts), m = Math.round(d / 60000);
+    if (m < 1) return "just now"; if (m < 60) return m + " min ago";
+    var h = Math.round(m / 60); if (h < 24) return h + " h ago";
+    return new Date(ts).toLocaleDateString();
+  }
+  function clock(ts) { return ts ? new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""; }
+  function nameOf(id) { var p = S.profiles[id]; return (p && p.name) || (S.me && id === S.me.id ? "You" : "Someone"); }
+  function avatarOf(id) { var p = S.profiles[id]; return p && p.avatarUrl; }
+  function agentByName(n) { n = String(n || "").toLowerCase(); return S.agents.find(function (a) { return a.name.toLowerCase() === n; }); }
+  function slug(s) { return String(s || "").trim().toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 24); }
+
+  function setConn(on, text) { $("conn-dot").className = "dot" + (on ? " on" : ""); $("conn-text").textContent = text; }
+  function notice(msg) { $("chat-notice").textContent = msg || ""; }
+
+  async function resolveProfiles() {
+    if (!user) return;
+    var ids = new Set();
+    S.humans.forEach(function (h) { ids.add(h.id); });
+    S.msgs.forEach(function (m) { if (m.authorId) ids.add(m.authorId); });
+    S.items.forEach(function (i) { if (i.ownerKind === "human") ids.add(i.owner); });
+    if (S.directive && S.directive.byId) ids.add(S.directive.byId);
+    if (S.strategy && S.strategy.byId) ids.add(S.strategy.byId);
+    if (S.me && S.me.id) ids.add(S.me.id);
+    if (!ids.size) return;
+    try { S.profiles = await user.profiles(Array.from(ids)); } catch (e) {}
+  }
+
+  function ownerLabel(i) { return i.ownerKind === "human" ? nameOf(i.owner) : (i.owner || "unassigned"); }
+
+  /* ---------- render ---------- */
+  async function render() {
+    await resolveProfiles();
+    renderItems(); renderAttn(); renderFeatures(); renderRoster(); renderChat(); renderDock(); renderCounts(); renderOwners();
+  }
+
+  function renderCounts() {
+    var open = S.items.filter(function (i) { return i.step < 5; });
+    $("n-block").textContent = open.filter(function (i) { return i.status === "blocked"; }).length;
+    $("n-wait").textContent = open.filter(function (i) { return i.status === "waiting"; }).length;
+    $("n-wip").textContent = open.length;
+    $("n-done").textContent = S.items.filter(function (i) { return i.step >= 5; }).length;
+    $("team-count").textContent = S.humans.length + (S.humans.length === 1 ? " human · " : " humans · ") + S.agents.length + (S.agents.length === 1 ? " agent" : " agents");
+  }
+
+  function stepsEl(i) {
+    var bar = el("div", "steps"); bar.setAttribute("aria-label", "Step " + (i.step + 1) + " of 6: " + STEPS[i.step] + (i.status !== "working" ? ", " + i.status : ""));
+    for (var k = 0; k < 6; k++) {
+      var s = el("span");
+      if (k <= i.step) s.className = "on";
+      if (k === i.step + 1 && i.step < 5 && i.status === "waiting") s.className = "wait";
+      if (k === i.step + 1 && i.step < 5 && i.status === "blocked") s.className = "blk";
+      bar.appendChild(s);
+    }
+    return bar;
+  }
+  function statusChip(i) {
+    var map = { working: ["ok", "working"], waiting: ["attn", "waiting on a human"], blocked: ["block", "blocked"] };
+    var m = map[i.status] || map.working; return el("span", "chip " + m[0], m[1]);
+  }
+
+  function renderItems() {
+    var ul = $("items"); ul.textContent = "";
+    var open = S.items.filter(function (i) { return i.step < 5; });
+    $("items-empty").hidden = open.length > 0;
+    open.forEach(function (i) {
+      var li = el("li");
+      var left = el("div"); left.style.display = "grid"; left.style.gap = "4px";
+      left.appendChild(el("span", "i-title", i.title));
+      var meta = el("div", "i-meta"); meta.appendChild(statusChip(i));
+      meta.appendChild(el("span", null, "Owner: " + ownerLabel(i)));
+      if (i.updatedAt) meta.appendChild(el("span", null, "Updated " + ago(i.updatedAt)));
+      left.appendChild(meta); li.appendChild(left);
+      var act = el("div", "i-act");
+      act.appendChild(btn("◀", "Move back a step", function () { patchItem(i, { step: Math.max(0, i.step - 1) }); }, i.step === 0));
+      act.appendChild(btn("▶", "Move forward a step", function () { patchItem(i, { step: Math.min(5, i.step + 1), status: i.step + 1 >= 5 ? "working" : i.status }); }));
+      var sel = el("select"); sel.setAttribute("aria-label", "Status of " + i.title);
+      [["working", "Working"], ["waiting", "Needs a human"], ["blocked", "Blocked"]].forEach(function (o) { var op = el("option", null, o[1]); op.value = o[0]; if (o[0] === i.status) op.selected = true; sel.appendChild(op); });
+      sel.addEventListener("change", function () { patchItem(i, { status: sel.value }); });
+      act.appendChild(sel);
+      li.appendChild(act);
+      li.appendChild(stepsEl(i));
+      var labels = el("div", "step-labels"); labels.setAttribute("aria-hidden", "true"); STEPS.forEach(function (s) { labels.appendChild(el("span", null, s)); });
+      li.appendChild(labels);
+      ul.appendChild(li);
+    });
+  }
+  function btn(label, aria, fn, disabled) { var b = el("button", "btn small", label); b.type = "button"; b.setAttribute("aria-label", aria); b.disabled = !!disabled || S.canWrite === false; b.addEventListener("click", fn); return b; }
+
+  function renderAttn() {
+    var ul = $("attn"); ul.textContent = "";
+    var list = S.items.filter(function (i) { return i.step < 5 && (i.status === "blocked" || i.status === "waiting"); })
+      .sort(function (a, b) { return (a.status === "blocked" ? 0 : 1) - (b.status === "blocked" ? 0 : 1) || (a.updatedAt || 0) - (b.updatedAt || 0); });
+    $("attn-empty").hidden = list.length > 0;
+    list.forEach(function (i) {
+      var li = el("li"); li.appendChild(el("span", "sev" + (i.status === "blocked" ? " block" : "")));
+      var body = el("div"); body.style.display = "grid"; body.style.gap = "4px";
+      body.appendChild(el("span", "i-title", i.title));
+      var meta = el("div", "i-meta"); meta.appendChild(statusChip(i));
+      meta.appendChild(el("span", null, "At " + STEPS[i.step] + " · owner " + ownerLabel(i)));
+      if (i.updatedAt) meta.appendChild(el("span", null, "Waiting " + ago(i.updatedAt).replace(" ago", "")));
+      body.appendChild(meta); li.appendChild(body); ul.appendChild(li);
+    });
+  }
+
+  function renderFeatures() {
+    var box = $("features"); box.textContent = "";
+    var done = S.items.filter(function (i) { return i.step >= 5; }).sort(function (a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); });
+    $("features-empty").hidden = done.length > 0;
+    done.forEach(function (i) {
+      var c = el("div", "feat"); var chip = el("span", "chip ok", "live"); chip.style.justifySelf = "start"; c.appendChild(chip);
+      c.appendChild(el("span", "f-name", i.title));
+      c.appendChild(el("span", "f-meta", ownerLabel(i) + (i.updatedAt ? " · " + ago(i.updatedAt) : "")));
+      box.appendChild(c);
+    });
+  }
+
+  function renderRoster() {
+    var ul = $("roster"); ul.textContent = "";
+    ul.appendChild(el("li", "group", "Humans"));
+    if (!S.humans.length) { var e = el("li"); e.appendChild(el("span")); e.appendChild(el("span", "r-doing", "No one has joined yet.")); ul.appendChild(e); }
+    S.humans.forEach(function (h) {
+      var li = el("li"); var img = el("img", "avatar"); img.alt = ""; var a = avatarOf(h.id); if (a) img.src = a; li.appendChild(img);
+      var d = el("div"); d.appendChild(el("div", "r-name", nameOf(h.id) + (S.me && h.id === S.me.id ? " (you)" : "")));
+      d.appendChild(el("div", "r-doing", h.role || "Team member")); li.appendChild(d);
+      var on = S.online.has(h.id); li.appendChild(el("span", "chip " + (on ? "ok" : "idle"), on ? "online" : "away"));
+      ul.appendChild(li);
+    });
+    ul.appendChild(el("li", "group", "Agents"));
+    if (!S.agents.length) { var e2 = el("li"); e2.appendChild(el("span")); e2.appendChild(el("span", "r-doing", "No agents yet. Add one below.")); ul.appendChild(e2); }
+    S.agents.forEach(function (a) {
+      var li = el("li"); li.appendChild(el("span", "bot", a.name.slice(0, 2).toUpperCase()));
+      var d = el("div"); d.appendChild(el("div", "r-name", a.name)); d.appendChild(el("div", "r-doing", a.role || "Agent")); li.appendChild(d);
+      li.appendChild(el("span", "chip agent", pendingAgents[a.name] ? "replying…" : (a.kind === "external" ? "external" : "in chat")));
+      ul.appendChild(li);
+    });
+    $("online-hint").textContent = S.online.size ? S.online.size + " online now" : "";
+    var joined = S.me && S.humans.some(function (h) { return h.id === S.me.id; });
+    $("join-btn").textContent = joined ? "Update my role" : "Join the team";
+    var chips = $("mention-chips"); chips.textContent = "";
+    S.agents.forEach(function (a) { var b = el("button", null, "@" + a.name); b.type = "button"; b.addEventListener("click", function () { var i = $("chat-input"); i.value = (i.value ? i.value.replace(/\s*$/, " ") : "") + "@" + a.name + " "; i.focus(); }); chips.appendChild(b); });
+  }
+
+  function textWithMentions(text) {
+    var span = el("span", "m-text"); var parts = String(text).split(/(@[a-z0-9-]+)/gi);
+    parts.forEach(function (p) { if (/^@[a-z0-9-]+$/i.test(p) && agentByName(p.slice(1))) span.appendChild(el("span", "mention", p)); else span.appendChild(document.createTextNode(p)); });
+    return span;
+  }
+
+  function renderChat() {
+    var ul = $("msgs"); var atBottom = ul.scrollHeight - ul.scrollTop - ul.clientHeight < 40; ul.textContent = "";
+    var list = S.msgs.slice().sort(function (a, b) { return (a.createdAt || 0) - (b.createdAt || 0); });
+    $("msgs-empty").hidden = list.length > 0 || Object.keys(pendingAgents).length > 0;
+    list.forEach(function (m) {
+      var li = el("li", "msg" + (m.authorKind === "agent" ? " agent" : ""));
+      if (m.authorKind === "agent") li.appendChild(el("span", "bot", String(m.agent || "?").slice(0, 2).toUpperCase()));
+      else { var img = el("img", "avatar"); img.alt = ""; var a = avatarOf(m.authorId); if (a) img.src = a; li.appendChild(img); }
+      var body = el("div"); var head = el("div", "m-head");
+      head.appendChild(el("span", "m-name", m.authorKind === "agent" ? (m.agent || "agent") : nameOf(m.authorId)));
+      if (m.authorKind === "agent") head.appendChild(el("span", "chip agent", "agent"));
+      head.appendChild(el("span", "m-time", clock(m.createdAt)));
+      body.appendChild(head); body.appendChild(textWithMentions(m.text || "")); li.appendChild(body); ul.appendChild(li);
+    });
+    Object.keys(pendingAgents).forEach(function (n) {
+      var li = el("li", "msg agent pending"); li.appendChild(el("span", "bot", n.slice(0, 2).toUpperCase()));
+      var body = el("div"); var head = el("div", "m-head"); head.appendChild(el("span", "m-name", n)); body.appendChild(head);
+      body.appendChild(el("span", "m-text", pendingAgents[n] === true ? "Thinking…" : pendingAgents[n])); li.appendChild(body); ul.appendChild(li);
+    });
+    if (atBottom || list.length < 6) ul.scrollTop = ul.scrollHeight;
+  }
+
+  function renderDock() {
+    var d = S.directive;
+    var has = d && d.text;
+    $("directive-banner").hidden = !has;
+    if (has) {
+      $("directive-banner-text").textContent = d.text;
+      $("directive-banner-meta").textContent = "For " + (d.scope || "everyone") + " · pinned by " + nameOf(d.byId) + " · " + ago(d.at);
+    }
+    var st = S.strategy;
+    $("strat-text").textContent = (st && st.text) || "No strategy written yet.";
+    $("strat-meta").textContent = st && st.text ? "by " + (st.byKind === "agent" ? (st.by || "agent") : nameOf(st.byId)) + " · " + ago(st.at) : "";
+    var strat = $("strat-input"); if (document.activeElement !== strat && st && st.text && !strat.dataset.dirty) strat.value = st.text;
+    var sc = $("dir-scope"), cur = sc.value; sc.textContent = "";
+    ["everyone", "all agents"].concat(S.agents.map(function (a) { return a.name; })).forEach(function (o) { var op = el("option", null, o === "everyone" ? "Everyone" : o === "all agents" ? "All agents" : o); op.value = o; sc.appendChild(op); });
+    if (cur) sc.value = cur;
+  }
+
+  function renderOwners() {
+    var sel = $("item-owner"), cur = sel.value; sel.textContent = "";
+    var me = el("option", null, "Me"); me.value = "me"; sel.appendChild(me);
+    S.agents.forEach(function (a) { var o = el("option", null, a.name); o.value = "agent:" + a.name; sel.appendChild(o); });
+    if (cur) sel.value = cur;
+  }
+
+  /* ---------- writes ---------- */
+  function guardWrite() {
+    if (!db) { notice("This board can't save right now. Open it in Claude to work on it."); return false; }
+    if (S.canWrite === false) { notice("You can view this board but not change it. Ask the owner for Contributor access."); return false; }
+    return true;
+  }
+  async function write(fn) {
+    try { await fn(); notice(""); }
+    catch (e) {
+      if (e && e.code === "invalid_argument") { S.canWrite = false; notice("Your access is view-only, so that wasn't saved."); }
+      else if (e && e.code === "quota_exceeded") notice("The board is full. Delete old items or messages to add more.");
+      else notice("That didn't save. Try again in a moment.");
+    }
+  }
+  function patchItem(i, patch) {
+    if (!guardWrite()) return;
+    patch.updatedAt = Date.now();
+    write(function () { return db.doc("items/" + i._id).update(patch); });
+  }
+
+  $("item-form").addEventListener("submit", function (e) {
+    e.preventDefault(); if (!guardWrite()) return;
+    var t = $("item-title").value.trim(); if (!t) return;
+    var o = $("item-owner").value; var doc = { title: t, step: 0, status: "working", createdAt: Date.now(), updatedAt: Date.now() };
+    if (o.indexOf("agent:") === 0) { doc.ownerKind = "agent"; doc.owner = o.slice(6); } else { doc.ownerKind = "human"; doc.owner = S.me && S.me.id; }
+    write(function () { return db.collection("items").add(doc); }); $("item-title").value = "";
+  });
+
+  $("join-form").addEventListener("submit", function (e) {
+    e.preventDefault(); if (!guardWrite()) return;
+    if (!S.me || !S.me.id) { notice("Sign in to Claude to join the team."); return; }
+    var role = $("join-role").value.trim();
+    write(function () { return db.doc("humans/" + S.me.id).set({ id: S.me.id, role: role || "Team member", joinedAt: Date.now() }); });
+  });
+
+  $("agent-form").addEventListener("submit", function (e) {
+    e.preventDefault(); if (!guardWrite()) return;
+    var name = slug($("agent-name").value); if (!name) { notice("Give the agent a short name: letters, numbers or dashes."); return; }
+    var role = $("agent-role").value.trim(); var kind = $("agent-kind").value;
+    write(function () { return db.doc("agents/" + name).set({ name: name, role: role || "Agent", kind: kind, addedBy: S.me && S.me.id, addedAt: Date.now() }); });
+    $("agent-name").value = ""; $("agent-role").value = "";
+  });
+
+  $("dir-form").addEventListener("submit", function (e) {
+    e.preventDefault(); if (!guardWrite()) return;
+    var t = $("dir-text").value.trim(); if (!t) return;
+    write(function () { return db.doc("board/directive").set({ text: t, scope: $("dir-scope").value, byId: S.me && S.me.id, at: Date.now() }); });
+    $("dir-text").value = "";
+  });
+  $("dir-clear").addEventListener("click", function () {
+    if (!guardWrite()) return;
+    write(function () { return db.doc("board/directive").set({ text: "", byId: S.me && S.me.id, at: Date.now() }); });
+  });
+  $("strat-input").addEventListener("input", function () { $("strat-input").dataset.dirty = "1"; });
+  $("strat-form").addEventListener("submit", function (e) {
+    e.preventDefault(); if (!guardWrite()) return;
+    var t = $("strat-input").value.trim(); if (!t) return;
+    delete $("strat-input").dataset.dirty;
+    write(function () { return db.doc("board/strategy").set({ text: t, byKind: "human", byId: S.me && S.me.id, at: Date.now() }); });
+  });
+
+  $("chat-form").addEventListener("submit", async function (e) {
+    e.preventDefault(); if (!guardWrite()) return;
+    var input = $("chat-input"); var text = input.value.trim(); if (!text) return;
+    input.value = "";
+    var mentioned = (text.match(/@([a-z0-9-]+)/gi) || []).map(function (m) { return agentByName(m.slice(1)); }).filter(Boolean);
+    var seen = {}; mentioned = mentioned.filter(function (a) { if (seen[a.name]) return false; seen[a.name] = 1; return true; });
+    await write(function () { return db.collection("messages").add({ text: text, authorKind: "human", authorId: S.me && S.me.id, mentions: mentioned.map(function (a) { return a.name; }), createdAt: Date.now() }); });
+    for (var k = 0; k < mentioned.length; k++) {
+      if (mentioned[k].kind === "claude") replyAs(mentioned[k], text);
+      else notice("@" + mentioned[k].name + " is an external session. It will see this the next time it reads the board.");
+    }
+  });
+
+  function boardContext() {
+    var lines = [];
+    if (S.directive && S.directive.text) lines.push("Pinned directive (for " + (S.directive.scope || "everyone") + "): " + S.directive.text);
+    if (S.strategy && S.strategy.text) lines.push("Current strategy: " + S.strategy.text);
+    var items = S.items.slice(0, 20).map(function (i) { return "- " + i.title + " [" + STEPS[i.step] + ", " + i.status + ", owner " + ownerLabel(i) + "]"; });
+    if (items.length) lines.push("Work items:\n" + items.join("\n"));
+    lines.push("Team humans: " + (S.humans.map(function (h) { return nameOf(h.id) + " (" + (h.role || "member") + ")"; }).join(", ") || "none listed"));
+    lines.push("Team agents: " + S.agents.map(function (a) { return a.name + " (" + (a.role || "agent") + ")"; }).join(", "));
+    return lines.join("\n\n");
+  }
+  function transcript() {
+    return S.msgs.slice().sort(function (a, b) { return (a.createdAt || 0) - (b.createdAt || 0); }).slice(-20)
+      .map(function (m) { return (m.authorKind === "agent" ? m.agent + " (agent)" : nameOf(m.authorId) + " (human)") + ": " + m.text; }).join("\n");
+  }
+
+  async function replyAs(agent, latest) {
+    if (!sample) { notice("@" + agent.name + " can't answer here: this view can't reach Claude."); return; }
+    pendingAgents[agent.name] = true; renderChat(); renderRoster();
+    var prompt = "You are \"" + agent.name + "\", an AI agent on a shared team board where humans and AI agents work together. Your role: " + (agent.role || "general helper") + ".\n" +
+      "Reply in the team chat as " + agent.name + " to the latest message, which mentions you. Be brief (under 90 words), concrete and friendly. Say what you think, what you'd do next, or what you need from a human. " +
+      "You can only talk in this chat: never claim you changed files, ran code, or updated the board. Don't prefix your reply with your name.\n\n" +
+      "BOARD STATE\n" + boardContext() + "\n\nRECENT CHAT (oldest first)\n" + transcript() + "\n\nLATEST MESSAGE TO YOU\n" + latest;
+    try {
+      var r = await sample(prompt, { cache: false, modelTier: "quick", onText: function (u) { pendingAgents[agent.name] = u.text; renderChat(); } });
+      delete pendingAgents[agent.name];
+      await write(function () { return db.collection("messages").add({ text: r.text.trim(), authorKind: "agent", agent: agent.name, triggeredBy: S.me && S.me.id, createdAt: Date.now() }); });
+    } catch (e) {
+      delete pendingAgents[agent.name];
+      var why = { not_granted: "you haven't allowed this board to use Claude", sampling_disabled: "Claude isn't available on this account", rate_limited: "too many requests right now — try again in a bit", refused: "it declined that message" }[e && e.code] || "something went wrong";
+      if (e && e.code !== "cancelled") notice("@" + agent.name + " couldn't reply: " + why + ".");
+    }
+    renderChat(); renderRoster();
+  }
+
+  /* ---------- boot ---------- */
+  function docs(snap) { return snap.docs.map(function (d) { var o = Object.assign({}, d.data()); o._id = d.id; return o; }); }
+
+  async function boot() {
+    render();
+    if (!window.claude || !window.claude.use) { setConn(false, "Offline copy: open in Claude to collaborate"); return; }
+    var got = await Promise.all(["db", "user", "sample", "room"].map(function (n) { return window.claude.use(n).catch(function () { return null; }); }));
+    db = got[0]; user = got[1]; sample = got[2]; room = got[3];
+    if (user) {
+      try { S.me = await user.me(); } catch (e) {}
+      try { S.canWrite = await user.can("data.write"); } catch (e) {}
+    }
+    if (!db) { setConn(false, "Read-only: sign in to Claude to see the team's board"); return; }
+    setConn(true, S.canWrite === false ? "Live · view only" : "Live");
+    var onErr = function () { setConn(false, "Connection lost: reload to reconnect"); };
+    db.collection("humans").onSnapshot(function (s) { S.humans = docs(s).sort(function (a, b) { return (a.joinedAt || 0) - (b.joinedAt || 0); }); render(); }, onErr);
+    db.collection("agents").onSnapshot(function (s) { S.agents = docs(s).sort(function (a, b) { return (a.addedAt || 0) - (b.addedAt || 0); }); render(); }, onErr);
+    db.collection("items").orderBy("createdAt").limit(200).onSnapshot(function (s) { S.items = docs(s).map(function (i) { i.step = Math.max(0, Math.min(5, Number(i.step) || 0)); i.status = i.status || "working"; return i; }); render(); }, onErr);
+    db.collection("messages").orderBy("createdAt", "desc").limit(150).onSnapshot(function (s) { S.msgs = docs(s); render(); }, onErr);
+    db.doc("board/directive").onSnapshot(function (d) { S.directive = d.exists ? d.data() : null; render(); }, onErr);
+    db.doc("board/strategy").onSnapshot(function (d) { S.strategy = d.exists ? d.data() : null; render(); }, onErr);
+    if (room) {
+      try { room.onPeers(function (c) { S.online = new Set(c.peers.filter(function (p) { return p.kind === "viewer" && p.by; }).map(function (p) { return p.by; })); renderRoster(); }); } catch (e) {}
+    }
+  }
+  boot();
+})();
+</script>
