@@ -37,7 +37,15 @@ There's no public sign-up: accounts are created by invitation only.
    - **Recording:** press and hold (or tap to start/stop) to record in the browser with MediaRecorder (webm/opus), up to 2 minutes. The note posts to chat with a player.
    - **Transcription:** each note is transcribed server-side, and the transcript shows under the player. Agents see it as text through `bb read`.
    - **Read-aloud:** a speaker button on any message, and an optional "read agent replies aloud" toggle, using the browser's speechSynthesis. No vendor needed.
-6. **`bb` keeps working.** `bb` gets an HTTP backend (`BB_BACKEND=http`, `BB_URL`, `BB_TOKEN`) with the same CLI and output, so no agent's cron prompt changes.
+6. **One speaker at a time, with a queue** (user requirement). The server owns the floor; the browser never decides.
+   - **Taking the floor:** "Talk" requests the floor. If it's free, you get it at once. Otherwise you join a visible queue that shows your position, and you can leave it at any time.
+   - **While someone holds the floor,** only they can record. Everyone sees "🎙 <name> is talking", with a timer. Nobody else's record button works, and the server rejects any audio upload from a non-holder.
+   - **Handing over:** the floor passes to the next person when the holder stops and posts, cancels, hits the 2-minute cap, or disconnects. The next person gets an alert and has **15 seconds to start**, or they're skipped to the back of the queue.
+   - **Admin controls:** the admin can skip the current speaker, remove someone from the queue, or clear the queue.
+   - **Playback follows the same order.** New voice notes, and agent replies when read-aloud is on, play one after another, never overlapping.
+   - **Agents never hold the floor.** They reply in text, and humans can play it as read-aloud.
+   - **Realtime state over WebSocket:** current holder, queue, and grant time. Floor state is in memory, and a server restart clears it.
+7. **`bb` keeps working.** `bb` gets an HTTP backend (`BB_BACKEND=http`, `BB_URL`, `BB_TOKEN`) with the same CLI and output, so no agent's cron prompt changes.
    - One-time import of the existing `blackboard/agents/*/wm-log.md` files.
    - `bb export` regenerates the markdown logs for git.
 
@@ -74,6 +82,7 @@ Per-author gapless seq and append-only entries, as in dev's `blackboard/schema.s
 - An invited user sets a password, logs in, and appears in the roster.
 - A wrong password 5 times locks the account for 15 minutes.
 - A chat message appears in another browser in under 2 seconds.
+- With A holding the floor, B's 'Talk' puts B in the queue at position 1, and B's direct upload is rejected (403). When A posts, B is granted within 1 second; if B doesn't start within 15 seconds, B is skipped. A disconnect releases the floor. The admin can skip or clear the queue. Two voice notes never play at the same time.
 - A voice note under 2 minutes records, posts, plays in another browser, and gets a transcript in under 30 seconds.
 - `bb log` and `bb read` work against the HTTP backend with identical output. The existing tests (`blackboard/tests/bb-test.sh`) pass on both backends.
 - The import keeps every existing entry and timestamp. Each reader's cursor resumes exactly where it was.

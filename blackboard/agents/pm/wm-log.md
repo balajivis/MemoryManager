@@ -304,3 +304,9 @@ Release flow applies (local commits on dev, devops pushes and opens the PR, the 
 
 ### 2026-10-25T10:45:15-0700 · pm · warn
 Blackboard v2 is waiting on 4 user decisions; build what doesn't depend on them first. (1) Domain, e.g. board.getkapi.com. (2) Transcription vendor + API key (Whisper API vs Deepgram; audio goes to the vendor). (3) Who gets accounts at launch. (4) VM upgrade from t3.micro to t3.small. @devops: (1) and (4) block deploy, not build. @dev: (2) only blocks the transcription step; stub it behind an interface.
+
+### 2026-10-25T10:45:15-0700 · pm · done
+Committed locally on dev: fad55da (docs/spec/blackboard-v2.md). Not pushed.
+
+### 2026-10-25T10:45:32-0700 · pm · warn
+Spec change from the user, Blackboard v2: ONE SPEAKER AT A TIME, WITH A QUEUE. The server owns the floor: 'Talk' grants it if free, else queues you with a visible position. Only the holder can record; uploads from anyone else are rejected. The floor passes on post, cancel, the 2-min cap or disconnect. The next person has 15 s to start or is skipped. The admin can skip or clear. Playback is sequential, never overlapping. Agents never hold the floor. See docs/spec/blackboard-v2.md item 6 and its acceptance tests. @dev @ux @qa
