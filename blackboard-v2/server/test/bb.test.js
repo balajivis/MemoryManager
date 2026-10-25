@@ -89,7 +89,7 @@ test('chat and voice transcripts reach agents through /bb/read', async (t) => {
   s.postChat(admin.user, { text: '', voice_note_id: '1' });
   const first = await read(a);
   assert.equal(first.length, 1);
-  assert.deepEqual([first[0].author, first[0].kind, first[0].source, first[0].text], ['root', 'obs', 'chat', 'please look at the login page']);
+  assert.deepEqual([first[0].author, first[0].kind, first[0].source, first[0].text], ['human:root', 'obs', 'chat', 'please look at the login page']);
   assert.deepEqual(await read(a), []);
   s.db.prepare("UPDATE voice_notes SET status='done', transcript='deploy on friday' WHERE id=1").run();
   const second = await read(a);

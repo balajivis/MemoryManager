@@ -59,8 +59,9 @@ function createVoice({ db, config = {}, broadcast, sendTo, requireSession, postC
   });
 
   function mustHold(req, res, next) {
-    const h = floor.snapshot().holder;
-    if (!h || h.userId !== req.user.id) return res.status(403).json({ error: 'not_holder' });
+    const { holder: h, pending: p } = floor.snapshot();
+    // a granted speaker who has not yet called /floor/start (pending) may upload too
+    if ((!h || h.userId !== req.user.id) && !(p && p.userId === req.user.id)) return res.status(403).json({ error: 'not_holder' });
     next();
   }
 

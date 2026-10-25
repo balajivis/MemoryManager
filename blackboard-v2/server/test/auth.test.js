@@ -22,7 +22,8 @@ test('logged out: every API call is 401 except the public ones', async (t) => {
     assert.equal(r.status, 401, `${m} ${p}`);
   }
   assert.equal((await c.get('/healthz')).status, 200);
-  assert.equal((await c.get('/auth/invite/nope')).status, 404);
+  assert.equal((await c.post('/auth/invite/lookup', { token: 'nope' })).status, 404);
+  assert.equal((await c.post('/auth/invite/accept', { token: 'nope', password: 'long enough password' })).status, 404);
   const bad = new Client(s.base); bad.token = 'bbt_nope';
   assert.equal((await bad.get('/bb/read')).status, 401);
 });
@@ -41,19 +42,19 @@ test('invite flow: set password, log in, appear in roster; invite is single use'
   const admin = await makeUser(s, { email: 'root@x.test', name: 'root', role: 'admin' });
   const inv = await admin.post('/admin/invites', { email: 'Ann@x.test', name: 'ann', role: 'member' });
   assert.equal(inv.status, 201);
-  assert.match(inv.body.url, /^http:\/\/x\.test\/board\/invite\?token=[0-9a-f]{64}$/);
-  const token = new URL(inv.body.url).searchParams.get('token');
+  assert.match(inv.body.url, /^http:\/\/x\.test\/board\/invite\/#[0-9a-f]{64}$/);
+  const token = new URL(inv.body.url).hash.slice(1);
   // only the hash is stored
   assert.equal(s.db.prepare('SELECT COUNT(*) n FROM invites WHERE token_hash = ?').get(token).n, 0);
 
   const ann = new Client(s.base);
-  assert.deepEqual((await ann.get(`/auth/invite/${token}`)).body, { email: 'ann@x.test', name: 'ann' });
-  assert.equal((await ann.post(`/auth/invite/${token}`, { password: 'short' })).status, 400);
-  const ok = await ann.post(`/auth/invite/${token}`, { password: 'a long enough password' });
+  assert.deepEqual((await ann.post('/auth/invite/lookup', { token })).body, { email: 'ann@x.test', name: 'ann' });
+  assert.equal((await ann.post('/auth/invite/accept', { token, password: 'short' })).status, 400);
+  const ok = await ann.post('/auth/invite/accept', { token, password: 'a long enough password' });
   assert.equal(ok.status, 201);
   const cookie = (await fetch(`${s.base}/board/api/auth/me`, { headers: { cookie: ann.cookie } }));
   assert.equal(cookie.status, 200);
-  assert.equal((await new Client(s.base).post(`/auth/invite/${token}`, { password: 'another long password' })).status, 404);
+  assert.equal((await new Client(s.base).post('/auth/invite/accept', { token, password: 'another long password' })).status, 404);
 
   const again = new Client(s.base);
   assert.equal((await again.post('/auth/login', { email: 'ann@x.test', password: 'a long enough password' })).status, 200);
@@ -70,8 +71,8 @@ test('invite flow: set password, log in, appear in roster; invite is single use'
 test('cookie attributes', async (t) => {
   const s = await startServer({ insecureCookies: false }); t.after(s.stop);
   const { url } = createInvite(s.db, s.config, { email: 'a@x.test', name: 'a', role: 'admin' });
-  const token = new URL(url).searchParams.get('token');
-  const r = await fetch(`${s.base}/board/api/auth/invite/${token}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ password: 'long enough password' }) });
+  const token = new URL(url).hash.slice(1);
+  const r = await fetch(`${s.base}/board/api/auth/invite/accept`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ token, password: 'long enough password' }) });
   const c = r.headers.getSetCookie()[0];
   for (const a of ['HttpOnly', 'Secure', 'SameSite=Lax', 'Path=/board']) assert.ok(c.includes(a), a);
 });
@@ -87,10 +88,10 @@ test('lockout: 5 wrong passwords lock the account for 15 minutes', async (t) => 
     assert.deepEqual(r.body, unknown.body); // same error as an unknown email
   }
   const locked = await c.post('/auth/login', { email: 'lock@x.test', password: u.password });
-  assert.equal(locked.status, 423);
-  assert.equal(locked.body.error, 'locked');
+  assert.equal(locked.status, 429);
+  assert.equal(locked.body.error, 'too_many_attempts');
   // lock expires
-  s.db.prepare("UPDATE users SET locked_until = ? WHERE email = 'lock@x.test'").run(new Date(Date.now() - 1000).toISOString());
+  s.db.prepare("UPDATE login_fails SET first_at = first_at - 16 * 60 * 1000").run();
   assert.equal((await c.post('/auth/login', { email: 'lock@x.test', password: u.password })).status, 200);
 });
 

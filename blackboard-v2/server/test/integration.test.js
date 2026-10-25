@@ -35,7 +35,7 @@ test('voice is mounted: floor over WS, non-holder upload 403, note posts to chat
   assert.ok(msgs.some((m) => m.type === 'chat' && m.message.voice_note_id));
   const read = (await agent.get('/bb/read')).body.entries;
   assert.equal(read.length, 1);
-  assert.equal(read[0].author, 'alice');
+  assert.equal(read[0].author, 'human:alice');
   assert.match(read[0].text, /^\[voice note/);
   ws.terminate();
 });

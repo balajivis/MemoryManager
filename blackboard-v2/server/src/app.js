@@ -87,7 +87,7 @@ function createApp(overrides = {}) {
   });
 
   const bigJson = express.json({ limit: '50mb' });
-  const smallJson = express.json({ limit: '1mb' });
+  const smallJson = express.json({ limit: '64kb' });
   api.use((req, res, next) => (req.path === '/bb/import' ? bigJson : smallJson)(req, res, next));
 
   api.use(auth.pub);

@@ -121,6 +121,16 @@ CREATE TABLE summaries (
   updated_at TEXT NOT NULL
 );
 `,
+  `
+ALTER TABLE sessions ADD COLUMN last_seen_at TEXT;
+CREATE TABLE login_fails (
+  email TEXT NOT NULL,
+  ip TEXT NOT NULL,
+  n INTEGER NOT NULL,
+  first_at INTEGER NOT NULL,
+  PRIMARY KEY (email, ip)
+);
+`,
 ];
 
 function now() { return new Date().toISOString(); }
@@ -197,7 +207,7 @@ function readEntries(db, reader, replay) {
     const mark = db.prepare('INSERT OR IGNORE INTO chat_delivered (agent, message_id) VALUES (?,?)');
     const chat = msgs.map((m) => {
       mark.run(reader, m.id);
-      return { author: m.author, seq: m.id, kind: 'obs', text: chatEntryText(m), created_at: m.created_at, source: 'chat' };
+      return { author: `human:${m.author}`, seq: m.id, kind: 'obs', text: chatEntryText(m), created_at: m.created_at, source: 'chat' };
     });
     return rows.concat(chat).sort((a, b) =>
       a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 :
@@ -205,4 +215,7 @@ function readEntries(db, reader, replay) {
   }).immediate();
 }
 
-module.exports = { openDb, logEntry, readEntries, now, BbError, KINDS, NAME_RE, MAX_ENTRY };
+// "Ann Lee" -> "ann-lee": the agent-name form of a human display name
+function slug(name) { return String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }
+
+module.exports = { slug, openDb, logEntry, readEntries, now, BbError, KINDS, NAME_RE, MAX_ENTRY };

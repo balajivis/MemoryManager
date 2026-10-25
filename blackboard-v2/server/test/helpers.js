@@ -48,9 +48,9 @@ class Client {
 // create a user directly through the invite flow and return a logged-in client
 async function makeUser(s, { email, name, role = 'member', password = 'correct horse battery' }) {
   const { url } = createInvite(s.db, s.config, { email, name, role });
-  const token = new URL(url).searchParams.get('token');
+  const token = new URL(url).hash.slice(1);
   const c = new Client(s.base);
-  const r = await c.post(`/auth/invite/${token}`, { password });
+  const r = await c.post('/auth/invite/accept', { token, password });
   if (r.status !== 201) throw new Error('invite failed ' + JSON.stringify(r.body));
   return Object.assign(c, { password, email, user: r.body.user });
 }
