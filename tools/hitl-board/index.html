@@ -25,6 +25,7 @@
     --accent: #7DB6E6; --accent-soft: #1A2C3D; --attn: #F0A852; --attn-soft: #3A2A16; --block: #F08A82; --block-soft: #3D1F1D;
     --ok: #6FCF97; --ok-soft: #163125; --agent: #B3A9F0; --agent-soft: #262341;
   }
+  [hidden] { display: none !important; }
   * { box-sizing: border-box; }
   body { background: var(--ground); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.45; padding-inline: 20px; padding-block: 0 48px; }
   .wrap { max-width: 1240px; margin-inline: auto; display: grid; gap: 18px; }
@@ -130,6 +131,21 @@
   .strategy-text { white-space: pre-wrap; margin: 0; padding: 12px 16px 0; max-width: 65ch; }
   .notice { font-size: 13px; color: var(--block); }
 
+  .notice[data-kind="error"] { color: var(--block); }
+  .notice { color: var(--muted); }
+  .firstrun { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 12px; padding: 12px 16px; }
+  .firstrun form { display: flex; gap: 8px; flex-wrap: wrap; }
+  .viewonly { font-size: 14px; color: var(--muted); background: var(--sunk); border: 1px solid var(--line); border-radius: 12px; padding: 10px 16px; }
+  .needed { font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+  .needed-form { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; }
+  .needed-form input { flex: 1 1 200px; }
+  .features:empty { display: none; }
+  a.stat { color: inherit; text-decoration: none; }
+  a.stat:hover .k { text-decoration: underline; }
+  a.stat:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  details.add-agent { border-top: 1px solid var(--line); }
+  details.add-agent summary { padding: 10px 16px; cursor: pointer; font-weight: 600; font-size: 14px; color: var(--accent); }
+  details.add-agent form.inline { border-top: 0; padding-top: 0; }
   footer { font-size: 12.5px; color: var(--faint); }
 
   @media (max-width: 960px) { .main, .dock { grid-template-columns: 1fr; } }
@@ -150,6 +166,16 @@
     <span class="status" id="conn"><span class="dot" id="conn-dot"></span><span id="conn-text">Connecting…</span></span>
   </header>
 
+  <div class="firstrun" id="firstrun" hidden>
+    <span>You're viewing the team board. Join to chat and take on work.</span>
+    <form id="first-join">
+      <label class="sr" for="first-role">Your role</label>
+      <input type="text" id="first-role" placeholder="Your role, e.g. Founder" maxlength="60">
+      <button class="btn primary" type="submit">Join the team</button>
+    </form>
+  </div>
+  <div class="viewonly" id="viewonly" hidden>View only. Ask the owner for Contributor access to join in.</div>
+
   <div class="directive-banner" id="directive-banner" hidden>
     <span class="k">Directive · pinned</span>
     <span id="directive-banner-text"></span>
@@ -157,15 +183,15 @@
   </div>
 
   <div class="summary" role="list" aria-label="Board summary">
-    <div class="stat block" role="listitem"><span class="n" id="n-block">0</span><span class="k">Blocked</span></div>
-    <div class="stat attn" role="listitem"><span class="n" id="n-wait">0</span><span class="k">Waiting on a human</span></div>
-    <div class="stat" role="listitem"><span class="n" id="n-wip">0</span><span class="k">In progress</span></div>
+    <a class="stat block" role="listitem" href="#h-attn"><span class="n" id="n-block">0</span><span class="k">Blocked</span></a>
+    <a class="stat attn" role="listitem" href="#h-attn"><span class="n" id="n-wait">0</span><span class="k">Needs a human</span></a>
+    <div class="stat" role="listitem"><span class="n" id="n-wip">0</span><span class="k">Open</span></div>
     <div class="stat ok" role="listitem"><span class="n" id="n-done">0</span><span class="k">Delivered</span></div>
   </div>
 
   <div class="main">
-    <div class="col">
-      <section class="panel" aria-labelledby="h-wip">
+    <div class="col" id="left-col">
+      <section class="panel" aria-labelledby="h-wip" id="sec-wip">
         <div class="panel-head"><h2 id="h-wip">Work items in progress</h2><span class="hint">claimed → built → tested → PR → merged → live</span></div>
         <ul class="items" id="items"></ul>
         <div class="empty" id="items-empty">No work items yet. Add the first one below.</div>
@@ -178,7 +204,7 @@
         </form>
       </section>
 
-      <section class="panel" aria-labelledby="h-attn">
+      <section class="panel" aria-labelledby="h-attn" id="sec-attn">
         <div class="panel-head"><h2 id="h-attn">Needs a human</h2><span class="hint">Blocked first</span></div>
         <ul class="attn-list" id="attn"></ul>
         <div class="empty" id="attn-empty">Nothing is waiting on a human.</div>
@@ -195,11 +221,12 @@
       <section class="panel" aria-labelledby="h-team">
         <div class="panel-head"><h2 id="h-team">Team</h2><span class="hint" id="online-hint"></span></div>
         <ul class="roster" id="roster"></ul>
-        <form class="inline" id="join-form">
+        <form class="inline" id="join-form" hidden>
           <label class="sr" for="join-role">Your role</label>
           <input type="text" id="join-role" placeholder="Your role, e.g. Founder" maxlength="60">
-          <button class="btn primary" type="submit" id="join-btn">Join the team</button>
+          <button class="btn" type="submit" id="join-btn">Update my role</button>
         </form>
+        <details class="add-agent" id="agent-box"><summary>+ Add an agent</summary>
         <form class="inline" id="agent-form">
           <label class="sr" for="agent-name">Agent name</label>
           <input type="text" id="agent-name" placeholder="Agent name, e.g. researcher" maxlength="24" style="flex:1 1 120px">
@@ -212,11 +239,13 @@
           </select>
           <button class="btn" type="submit">Add agent</button>
         </form>
+        </details>
       </section>
 
       <section class="panel chat" aria-labelledby="h-chat">
         <div class="panel-head"><h2 id="h-chat">Team chat</h2><span class="hint">@mention an agent to bring it in</span></div>
-        <ul class="msgs" id="msgs" aria-live="polite"></ul>
+        <ul class="msgs" id="msgs"></ul>
+        <span class="sr" role="status" id="chat-live"></span>
         <div class="empty" id="msgs-empty">No messages yet. Say hello, or @mention an agent.</div>
         <form class="composer" id="chat-form">
           <div class="mentions" id="mention-chips" aria-label="Mention an agent"></div>
@@ -284,7 +313,7 @@
   function slug(s) { return String(s || "").trim().toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 24); }
 
   function setConn(on, text) { $("conn-dot").className = "dot" + (on ? " on" : ""); $("conn-text").textContent = text; }
-  function notice(msg) { $("chat-notice").textContent = msg || ""; }
+  function notice(msg, kind) { var n = $("chat-notice"); n.textContent = msg || ""; if (kind === "error") n.dataset.kind = "error"; else delete n.dataset.kind; }
 
   async function resolveProfiles() {
     if (!user) return;
@@ -328,7 +357,7 @@
     return bar;
   }
   function statusChip(i) {
-    var map = { working: ["ok", "working"], waiting: ["attn", "waiting on a human"], blocked: ["block", "blocked"] };
+    var map = { working: ["ok", "working"], waiting: ["attn", "needs a human"], blocked: ["block", "blocked"] };
     var m = map[i.status] || map.working; return el("span", "chip " + m[0], m[1]);
   }
 
@@ -343,20 +372,36 @@
       var meta = el("div", "i-meta"); meta.appendChild(statusChip(i));
       meta.appendChild(el("span", null, "Owner: " + ownerLabel(i)));
       if (i.updatedAt) meta.appendChild(el("span", null, "Updated " + ago(i.updatedAt)));
-      left.appendChild(meta); li.appendChild(left);
+      left.appendChild(meta);
+      if (i.status !== "working" && i.needed) left.appendChild(el("span", "needed", "Needed: " + i.needed));
+      li.appendChild(left);
       var act = el("div", "i-act");
       act.appendChild(btn("◀", "Move back a step", function () { patchItem(i, { step: Math.max(0, i.step - 1) }); }, i.step === 0));
       act.appendChild(btn("▶", "Move forward a step", function () { patchItem(i, { step: Math.min(5, i.step + 1), status: i.step + 1 >= 5 ? "working" : i.status }); }));
       var sel = el("select"); sel.setAttribute("aria-label", "Status of " + i.title);
       [["working", "Working"], ["waiting", "Needs a human"], ["blocked", "Blocked"]].forEach(function (o) { var op = el("option", null, o[1]); op.value = o[0]; if (o[0] === i.status) op.selected = true; sel.appendChild(op); });
-      sel.addEventListener("change", function () { patchItem(i, { status: sel.value }); });
+      sel.addEventListener("change", function () {
+        if (sel.value === "working") patchItem(i, { status: "working", needed: "" });
+        else { openNeeded[i._id] = sel.value; renderItems(); var f = document.getElementById("need-" + i._id); if (f) f.focus(); }
+      });
       act.appendChild(sel);
       li.appendChild(act);
+      if (openNeeded[i._id]) li.appendChild(neededForm(i, openNeeded[i._id]));
       li.appendChild(stepsEl(i));
       var labels = el("div", "step-labels"); labels.setAttribute("aria-hidden", "true"); STEPS.forEach(function (s) { labels.appendChild(el("span", null, s)); });
       li.appendChild(labels);
       ul.appendChild(li);
     });
+  }
+  var openNeeded = {};
+  function neededForm(i, status) {
+    var f = el("form", "needed-form");
+    var lab = el("label", "sr", "What's needed from a human?"); lab.htmlFor = "need-" + i._id; f.appendChild(lab);
+    var inp = el("input"); inp.type = "text"; inp.id = "need-" + i._id; inp.maxLength = 160; inp.placeholder = "Needed: e.g. approve the privacy policy text"; inp.value = i.needed || ""; f.appendChild(inp);
+    var save = el("button", "btn small primary", status === "blocked" ? "Mark blocked" : "Ask for a human"); save.type = "submit"; f.appendChild(save);
+    var cancel = el("button", "btn small", "Cancel"); cancel.type = "button"; cancel.addEventListener("click", function () { delete openNeeded[i._id]; renderItems(); }); f.appendChild(cancel);
+    f.addEventListener("submit", function (e) { e.preventDefault(); var v = inp.value.trim(); if (!v) { inp.focus(); return; } delete openNeeded[i._id]; patchItem(i, { status: status, needed: v }); });
+    return f;
   }
   function btn(label, aria, fn, disabled) { var b = el("button", "btn small", label); b.type = "button"; b.setAttribute("aria-label", aria); b.disabled = !!disabled || S.canWrite === false; b.addEventListener("click", fn); return b; }
 
@@ -365,6 +410,9 @@
     var list = S.items.filter(function (i) { return i.step < 5 && (i.status === "blocked" || i.status === "waiting"); })
       .sort(function (a, b) { return (a.status === "blocked" ? 0 : 1) - (b.status === "blocked" ? 0 : 1) || (a.updatedAt || 0) - (b.updatedAt || 0); });
     $("attn-empty").hidden = list.length > 0;
+    var col = $("left-col"), sa = $("sec-attn"), sw = $("sec-wip");
+    if (list.length && col.firstElementChild !== sa) col.insertBefore(sa, col.firstElementChild);
+    if (!list.length && col.firstElementChild === sa) col.insertBefore(sw, sa);
     list.forEach(function (i) {
       var li = el("li"); li.appendChild(el("span", "sev" + (i.status === "blocked" ? " block" : "")));
       var body = el("div"); body.style.display = "grid"; body.style.gap = "4px";
@@ -372,6 +420,7 @@
       var meta = el("div", "i-meta"); meta.appendChild(statusChip(i));
       meta.appendChild(el("span", null, "At " + STEPS[i.step] + " · owner " + ownerLabel(i)));
       if (i.updatedAt) meta.appendChild(el("span", null, "Waiting " + ago(i.updatedAt).replace(" ago", "")));
+      if (i.needed) body.appendChild(el("span", "needed", "Needed: " + i.needed));
       body.appendChild(meta); li.appendChild(body); ul.appendChild(li);
     });
   }
@@ -408,8 +457,12 @@
       ul.appendChild(li);
     });
     $("online-hint").textContent = S.online.size ? S.online.size + " online now" : "";
-    var joined = S.me && S.humans.some(function (h) { return h.id === S.me.id; });
-    $("join-btn").textContent = joined ? "Update my role" : "Join the team";
+    var joined = !!(S.me && S.me.id && S.humans.some(function (h) { return h.id === S.me.id; }));
+    var viewOnly = S.canWrite === false || !db;
+    $("firstrun").hidden = joined || viewOnly || !(S.me && S.me.id);
+    $("join-form").hidden = !joined || viewOnly;
+    $("viewonly").hidden = !(db && S.canWrite === false);
+    ["item-form", "agent-box", "chat-form", "dir-form", "strat-form"].forEach(function (id) { $(id).hidden = viewOnly && !!db; });
     var chips = $("mention-chips"); chips.textContent = "";
     S.agents.forEach(function (a) { var b = el("button", null, "@" + a.name); b.type = "button"; b.addEventListener("click", function () { var i = $("chat-input"); i.value = (i.value ? i.value.replace(/\s*$/, " ") : "") + "@" + a.name + " "; i.focus(); }); chips.appendChild(b); });
   }
@@ -468,16 +521,16 @@
 
   /* ---------- writes ---------- */
   function guardWrite() {
-    if (!db) { notice("This board can't save right now. Open it in Claude to work on it."); return false; }
-    if (S.canWrite === false) { notice("You can view this board but not change it. Ask the owner for Contributor access."); return false; }
+    if (!db) { notice("This board can't save right now. Open it in Claude to work on it.", "error"); return false; }
+    if (S.canWrite === false) { notice("You can view this board but not change it. Ask the owner for Contributor access.", "error"); return false; }
     return true;
   }
   async function write(fn) {
     try { await fn(); notice(""); }
     catch (e) {
-      if (e && e.code === "invalid_argument") { S.canWrite = false; notice("Your access is view-only, so that wasn't saved."); }
-      else if (e && e.code === "quota_exceeded") notice("The board is full. Delete old items or messages to add more.");
-      else notice("That didn't save. Try again in a moment.");
+      if (e && e.code === "invalid_argument") { S.canWrite = false; notice("Your access is view-only, so that wasn't saved.", "error"); }
+      else if (e && e.code === "quota_exceeded") notice("The board is full. Delete old items or messages to add more.", "error");
+      else notice("That didn't save. Try again in a moment.", "error");
     }
   }
   function patchItem(i, patch) {
@@ -498,6 +551,13 @@
     e.preventDefault(); if (!guardWrite()) return;
     if (!S.me || !S.me.id) { notice("Sign in to Claude to join the team."); return; }
     var role = $("join-role").value.trim();
+    write(function () { return db.doc("humans/" + S.me.id).set({ id: S.me.id, role: role || "Team member", joinedAt: Date.now() }); });
+  });
+
+  $("first-join").addEventListener("submit", function (e) {
+    e.preventDefault(); if (!guardWrite()) return;
+    if (!S.me || !S.me.id) { notice("Sign in to Claude to join the team.", "error"); return; }
+    var role = $("first-role").value.trim();
     write(function () { return db.doc("humans/" + S.me.id).set({ id: S.me.id, role: role || "Team member", joinedAt: Date.now() }); });
   });
 
@@ -534,10 +594,9 @@
     var mentioned = (text.match(/@([a-z0-9-]+)/gi) || []).map(function (m) { return agentByName(m.slice(1)); }).filter(Boolean);
     var seen = {}; mentioned = mentioned.filter(function (a) { if (seen[a.name]) return false; seen[a.name] = 1; return true; });
     await write(function () { return db.collection("messages").add({ text: text, authorKind: "human", authorId: S.me && S.me.id, mentions: mentioned.map(function (a) { return a.name; }), createdAt: Date.now() }); });
-    for (var k = 0; k < mentioned.length; k++) {
-      if (mentioned[k].kind === "claude") replyAs(mentioned[k], text);
-      else notice("@" + mentioned[k].name + " is an external session. It will see this the next time it reads the board.");
-    }
+    var ext = mentioned.filter(function (a) { return a.kind !== "claude"; }).map(function (a) { return "@" + a.name; });
+    if (ext.length) notice(ext.length === 1 ? ext[0] + " is an external session. It will see this the next time it reads the board." : ext.slice(0, -1).join(", ") + " and " + ext[ext.length - 1] + " are external sessions. They'll see this the next time they read the board.");
+    mentioned.forEach(function (a) { if (a.kind === "claude") replyAs(a, text); });
   });
 
   function boardContext() {
@@ -556,7 +615,7 @@
   }
 
   async function replyAs(agent, latest) {
-    if (!sample) { notice("@" + agent.name + " can't answer here: this view can't reach Claude."); return; }
+    if (!sample) { notice("@" + agent.name + " can't answer here: this view can't reach Claude.", "error"); return; }
     pendingAgents[agent.name] = true; renderChat(); renderRoster();
     var prompt = "You are \"" + agent.name + "\", an AI agent on a shared team board where humans and AI agents work together. Your role: " + (agent.role || "general helper") + ".\n" +
       "Reply in the team chat as " + agent.name + " to the latest message, which mentions you. Be brief (under 90 words), concrete and friendly. Say what you think, what you'd do next, or what you need from a human. " +
@@ -569,7 +628,7 @@
     } catch (e) {
       delete pendingAgents[agent.name];
       var why = { not_granted: "you haven't allowed this board to use Claude", sampling_disabled: "Claude isn't available on this account", rate_limited: "too many requests right now — try again in a bit", refused: "it declined that message" }[e && e.code] || "something went wrong";
-      if (e && e.code !== "cancelled") notice("@" + agent.name + " couldn't reply: " + why + ".");
+      if (e && e.code !== "cancelled") notice("@" + agent.name + " couldn't reply: " + why + ".", "error");
     }
     renderChat(); renderRoster();
   }
@@ -592,7 +651,15 @@
     db.collection("humans").onSnapshot(function (s) { S.humans = docs(s).sort(function (a, b) { return (a.joinedAt || 0) - (b.joinedAt || 0); }); render(); }, onErr);
     db.collection("agents").onSnapshot(function (s) { S.agents = docs(s).sort(function (a, b) { return (a.addedAt || 0) - (b.addedAt || 0); }); render(); }, onErr);
     db.collection("items").orderBy("createdAt").limit(200).onSnapshot(function (s) { S.items = docs(s).map(function (i) { i.step = Math.max(0, Math.min(5, Number(i.step) || 0)); i.status = i.status || "working"; return i; }); render(); }, onErr);
-    db.collection("messages").orderBy("createdAt", "desc").limit(150).onSnapshot(function (s) { S.msgs = docs(s); render(); }, onErr);
+    var firstMsgs = true;
+    db.collection("messages").orderBy("createdAt", "desc").limit(150).onSnapshot(function (s) {
+      var added = firstMsgs ? [] : s.docChanges().filter(function (c) { return c.type === "added"; });
+      firstMsgs = false; S.msgs = docs(s);
+      render().then(function () {
+        if (!added.length) return; var m = added[0].doc.data();
+        $("chat-live").textContent = (m.authorKind === "agent" ? m.agent : nameOf(m.authorId)) + ": " + String(m.text || "").slice(0, 80);
+      });
+    }, onErr);
     db.doc("board/directive").onSnapshot(function (d) { S.directive = d.exists ? d.data() : null; render(); }, onErr);
     db.doc("board/strategy").onSnapshot(function (d) { S.strategy = d.exists ? d.data() : null; render(); }, onErr);
     if (room) {
