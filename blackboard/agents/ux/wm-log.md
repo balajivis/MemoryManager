@@ -233,3 +233,21 @@ Verified in a test page built from your markup, light and dark. Uses :has() and 
 
 ### 2026-10-25T10:55:49-0700 · ux · done
 Re @dev 10:53:06 + @qa 10:54:23 R3: docs/ux/blackboard-v2-screens.md has new sections. §3g is the detail drawer: tiles open a filtered list drawer, cards open the item drawer (stacked, with ‹ Back); a right drawer on desktop and a full sheet on mobile; Esc, Back and the dimmed area close it; #item-<id> deep links; focus trapped and returned; live updates; activity only if the API has events. §3h is the daily summary: a pinned one-liner under the directive with an unread dot, the full card atop the Agent log (Done with commit chips / Decisions / Needs a human linking to drawers / Next), read-aloud and 'Previous days'. §3b: the invite token is now in the #fragment, POSTed in the body and stripped with replaceState (qa R3). @dev: your finding-7 text is fine, and I've aligned copy.md to the same wording.
+
+### 2026-10-25T10:55:49-0700 · ux · done
+Committed locally on dev: 70aef8c (screens §3g drawer, §3h summary, §3b invite fragment + log). Not pushed.
+
+### 2026-10-25T10:56:02-0700 · ux · reply
+Re @qa 10:54:23 R1/R2 (enumeration, lockout), the login copy in screens §3a: 'Too many attempts. Try again in 15 minutes.' is safe ONLY if the server counts and locks unknown emails exactly like real ones (per email+IP, as you suggest). Then the message leaks nothing. If dev instead returns the same 401 when locked, the UI shows the generic 'That email and password don't match.' and people can't tell they're locked out, so I prefer the first. @dev: pick one and I'll match the copy; @qa pins it in A-tests.
+
+### 2026-10-25T10:59:01-0700 · ux · ask
+@dev, for speed mode (devops 10:57:49): before you commit T2, please add the 2 polish hookup lines so they ship today. (1) app/layout.js: import './polish.css' after globals.css. (2) components/Floor.js: import { useTurnAlert } from '../lib/polish' and call useTurnAlert(status === 'turn'). Both files are already in 27f4eed and are CSS/JS only, with no new dependencies. If you're too slow on (2), (1) alone still gets all the visual polish.
+
+### 2026-10-25T11:09:41-0700 · ux · ask
+@dev Blackboard v2 browser check of drawers + summary (you said 'not yet eyeballed'). Ran a private local stack at c2842a8/daee4bb on ports 18780/18790 with seeded data, in real Chrome. cc @qa.
+HIGH 1 CRASH: switching from an item drawer to a tile drawer kills the whole board ('This page couldn't load', TypeError reading 'length'). Repro: open a tile list, open an item, press browser Back; or set location.hash='tile=blocked' while #item=1 is open. Cause: Drawer.js keeps the previous drawer's data, so the tile view reads data.items.length on an item object. Fix: key the drawer body by hash (<Body key={h.k+':'+h.v}/>) or reset data to null on hash change; guard (data.items||[]); and add an error boundary around the drawer so it can never take the board down.
+HIGH 2: the Blocked tile says 1 but its drawer shows 2 (blocked and needs-a-human merged under 'Blocked / Needs a human'), with the needs-a-human item FIRST. Give Blocked and Needs a human their own lists, or keep them merged with the title 'Blocked 1 · Needs a human 1' and sort blocked first.
+HIGH 3: @mentions of names with spaces break: '@UX Reviewer' highlights only '@UX' (chat and feed; 'mentions you' still detects it). Match against known display names, longest first.
+MEDIUM (screens §3g/§3h): the item drawer has no step bar and no actions (◀ ▶, status with the Needed prompt, Mark live), and shows raw values ('pr', 'waiting', history 'pr · waiting'). Use the board's labels (PR, Needs a human). List → item has no '‹ Back' link. The summary card shows ISO '2026-10-25' and only counts ('2 done · 1 blocked'): format the date as 'Sat Oct 25' and show the Done and Needs-a-human lines inline.
+LOW: the drawer's item title is link-blue but isn't a link.
+WORKS: fresh #item= deep links, Esc closes and focus returns to the opener, focus starts in the dialog (role=dialog, aria-modal), the overlay, the Agent log filters plus kind rails plus 'mentions you', the floor bar, the Needed lines, the login privacy notice, and the polish layer. NOT checked: 375px (my window wouldn't resize; qa U5 covers it), real recording, multiple users.
