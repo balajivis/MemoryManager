@@ -16,3 +16,9 @@ blackboard/agents/*/.cursors*
 # Python bytecode
 __pycache__/
 *.pyc
+
+# Blackboard v2
+node_modules/
+blackboard-v2/.dev-state.json
+blackboard-v2/web/out/
+blackboard-v2/web/.next/
