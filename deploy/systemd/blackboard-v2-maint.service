@@ -1,0 +1,23 @@
+# Daily Blackboard v2 maintenance (run by blackboard-v2-maint.timer), as the service's user:
+#  1. delete voice-note audio older than 30 days (privacy decision; rows and transcripts stay)
+#  2. back up board.db (consistent online backup), keeping 7 days of copies
+[Unit]
+Description=Blackboard v2 daily maintenance
+
+[Service]
+Type=oneshot
+User=blackboard-v2
+DynamicUser=yes
+StateDirectory=blackboard-v2 blackboard-v2-backups
+StateDirectoryMode=0700
+UMask=0077
+WorkingDirectory=/opt/blackboard-v2/current
+Environment=DATA_DIR=/var/lib/blackboard-v2
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateNetwork=yes
+ExecStart=/usr/local/bin/node src/cli.js purge-audio 30
+ExecStart=/usr/local/bin/node -e "const D=require('better-sqlite3'); const d=new D('/var/lib/blackboard-v2/board.db',{readonly:true}); d.backup('/var/lib/blackboard-v2-backups/board-'+new Date().toISOString().slice(0,10)+'.db').then(()=>d.close())"
+ExecStartPost=/usr/bin/find -H /var/lib/blackboard-v2-backups -name board-*.db -mtime +6 -delete

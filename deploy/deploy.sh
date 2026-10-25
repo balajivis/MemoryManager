@@ -138,6 +138,21 @@ sudo find "$rel.tmp" -type d -exec chmod 755 {} +
 sudo find "$rel.tmp" -type f -exec chmod 644 {} +
 sudo rm -rf "$rel"; sudo mv "$rel.tmp" "$rel"
 sudo ln -sfn "$rel" "$base/current.new" && sudo mv -T "$base/current.new" "$base/current"   # atomic switch
+# CSP from this release: hash every inline <script> and <style> in its HTML pages
+python3 - "$rel" <<"PY" | sudo tee /etc/nginx/snippets/memorymanager-csp.conf >/dev/null
+import base64, glob, hashlib, re, sys
+h = lambda s: "\x27sha256-" + base64.b64encode(hashlib.sha256(s.encode()).digest()).decode() + "\x27"
+js, css = set(), set()
+for f in glob.glob(sys.argv[1] + "/**/*.html", recursive=True):
+    t = open(f, encoding="utf-8").read()
+    js |= {h(m) for m in re.findall(r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>", t, re.S)}
+    css |= {h(m) for m in re.findall(r"<style[^>]*>(.*?)</style>", t, re.S)}
+pol = ("default-src \x27self\x27; script-src \x27self\x27 %s; style-src \x27self\x27 %s; img-src \x27self\x27 data:; "
+       "font-src \x27self\x27; connect-src \x27self\x27; form-action \x27self\x27; frame-ancestors \x27self\x27; "
+       "base-uri \x27none\x27; object-src \x27none\x27") % (" ".join(sorted(js)), " ".join(sorted(css)))
+print("add_header Content-Security-Policy \"%s\" always;" % pol)
+PY
+sudo nginx -t -q && sudo systemctl reload nginx
 echo "$(date -u +%FT%TZ) site $commit" | sudo tee -a "$base/DEPLOYS" >/dev/null
 # keep the 5 newest releases, never the live one
 ls -1t "$base/releases" | tail -n +6 | while read -r old; do
