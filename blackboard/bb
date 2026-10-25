@@ -5,8 +5,11 @@
 #   bb log <name> <kind> "<text>"   append an entry to your own wm-log ("-" reads text from stdin)
 #   bb read <name> [--all]          print entries from other agents since your last read
 #   bb who                          list registered agents and when each last read
+#   bb summary <name> <day> [text|-]   (http only) post the daily summary for YYYY-MM-DD
+#   bb export <name> [dir]             (http only) rewrite agents/*/wm-log.md from the server
 #
 # Each agent writes only its own log; everyone reads everyone. BB_DIR overrides the location.
+# BB_BACKEND=http uses the Blackboard v2 server instead of files (BB_URL, agent token: see below).
 set -euo pipefail
 
 BB="${BB_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
@@ -110,10 +113,170 @@ cmd_who() {
   done
 }
 
+# ---------------------------------------------------------------------------
+# HTTP backend (BB_BACKEND=http): the same commands and the same output, against the
+# Blackboard v2 server (docs/dev/blackboard-v2-api.md, /bb/*). Each agent authenticates
+# with its own token: $BB_TOKEN, or ${BB_TOKEN_DIR:-~/.config/bb}/<name>.token (chmod 600).
+# The token reaches curl through a file descriptor, never the command line, so it
+# doesn't show up in `ps`. JSON is built and parsed with python3 (stdlib only).
+
+BB_URL="${BB_URL:-https://memorymanager.getkapi.com/board/api}"
+
+token_for() {
+  if [ -n "${BB_TOKEN:-}" ]; then printf '%s' "$BB_TOKEN"; return; fi
+  local f="${BB_TOKEN_DIR:-$HOME/.config/bb}/$1.token"
+  [ -r "$f" ] || die "no token for '$1': set BB_TOKEN, or save it to $f (chmod 600)"
+  tr -d ' \r\n' < "$f"
+}
+
+# api <agent> <METHOD> <path> [json body]: prints the response body; dies on a non-2xx status
+api() {
+  local tok resp code msg
+  tok="$(token_for "$1")"
+  resp="$(printf '%s' "${4:-}" | curl -sS -X "$2" -H @<(printf 'Authorization: Bearer %s\n' "$tok") \
+            -H 'Content-Type: application/json' ${4:+--data-binary @-} -w $'\n%{http_code}' "$BB_URL$3")" \
+    || die "can't reach $BB_URL"
+  code="${resp##*$'\n'}"; resp="${resp%$'\n'*}"
+  if [[ ! "$code" =~ ^2 ]]; then
+    msg="$(python3 -c 'import json,sys
+try: d=json.loads(sys.stdin.read()); print(d.get("message") or d.get("error") or "")
+except Exception: print("")' <<< "$resp")"
+    die "server said $code${msg:+: $msg}"
+  fi
+  printf '%s' "$resp"
+}
+
+json() { python3 -c 'import json,sys; it=iter(sys.argv[1:]); print(json.dumps(dict(zip(it,it))))' "$@"; }
+
+http_register() {
+  local name="${1:-}" role="${2:-}"
+  check_name "$name"
+  [ -n "$role" ] || die "usage: bb register <name> \"<role>\""
+  [[ "$role" != *$'\n'* && "$role" != *$'\r'* ]] || die "role must be a single line"
+  api "$name" POST /bb/register "$(json name "$name" role "$role" cwd "$PWD")" >/dev/null
+  echo "registered '$name' → $BB_URL"
+}
+
+http_log() {
+  local name="${1:-}" kind="${2:-}" text="${3:-}" bytes
+  check_name "$name"
+  case "$kind" in
+    obs|claim|done|ask|reply|warn) ;;
+    *) die "usage: bb log <name> <obs|claim|done|ask|reply|warn> \"<text>\"" ;;
+  esac
+  [ "$text" = "-" ] && text="$(cat)"
+  [ -n "$text" ] || die "empty entry"
+  # same pre-checks as the file backend; the server escapes ### lines itself
+  local escaped
+  escaped="$(sed -E 's/^([[:space:]]*)###/\1\\###/' <<< "$text")"
+  bytes="$(printf '%s' "$escaped" | wc -c | tr -d ' ')"
+  [ "$bytes" -le "$MAX_ENTRY" ] || die "entry is $bytes bytes (max $MAX_ENTRY); split it, or put details in a file and link it"
+  # author is checked by the server against the token (a mismatch is refused, not silently re-attributed)
+  api "$name" POST /bb/log "$(json author "$name" kind "$kind" text "$text")" >/dev/null
+}
+
+# Formats like the file backend: one block per author (alphabetical), entries in seq order,
+# '\n### <local time> · author · kind\n<text>\n', each block trimmed and closed with '\n'.
+http_read() {
+  local me="${1:-}" all="${2:-}" replay=0
+  check_name "$me"
+  [ "$all" = "--all" ] && replay=1
+  api "$me" GET "/bb/read?replay=$replay" | python3 -c '
+import json, re, sys
+from datetime import datetime
+me = sys.argv[1]
+def local(ts): return datetime.fromisoformat(ts.replace("Z", "+00:00")).astimezone().strftime("%Y-%m-%dT%H:%M:%S%z")
+by = {}
+for e in json.load(sys.stdin)["entries"]:
+    by.setdefault(e["author"], []).append(e)
+out = ""
+for author in sorted(by):
+    chunk = "".join("\n### %s · %s · %s\n%s\n" % (local(e["created_at"]), author, e["kind"], e["text"])
+                    for e in sorted(by[author], key=lambda e: (e["created_at"], e["seq"])))
+    out += chunk.rstrip("\n") + "\n"
+if not out:
+    print("(nothing new)")
+else:
+    sys.stdout.write(out)
+    if re.search(r"@%s([^a-z0-9-]|$)" % re.escape(me), out, re.M):
+        sys.stdout.write("\n→ new entries mention @%s\n" % me)
+' "$me"
+}
+
+http_who() {
+  local me="${BB_AGENT:-}"
+  [ -n "$me" ] || [ -n "${BB_TOKEN:-}" ] || me="$(ls "${BB_TOKEN_DIR:-$HOME/.config/bb}" 2>/dev/null | sed -n 's/\.token$//p' | head -1)"
+  api "${me:-_}" GET /bb/who | python3 -c '
+import json, sys
+from datetime import datetime
+rows = json.load(sys.stdin)
+if not rows: print("(no agents registered)"); sys.exit()
+esc = lambda s: (s or "").replace("|", "\\|")
+print("# Registry\n\n| name | role | cwd | registered |\n|---|---|---|---|")
+for r in rows: print("| %s | %s | %s | %s |" % (r["name"], esc(r.get("role")), esc(r.get("cwd")), r.get("registered_at", "-")))
+print()
+for r in rows:
+    t = r.get("last_read_at")
+    print("%s  %s" % (r["name"], "last read " + datetime.fromisoformat(t.replace("Z", "+00:00")).astimezone().strftime("%Y-%m-%d %H:%M:%S") if t else "has not read yet"))
+'
+}
+
+# bb summary <name> <YYYY-MM-DD> [text|-]: post the daily summary (upsert by day).
+# If the text is a JSON object it is sent as the body ({text, done, blocked}); otherwise as plain text.
+http_summary() {
+  local name="${1:-}" day="${2:-}" text="${3:--}"
+  check_name "$name"
+  [[ "$day" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || die "usage: bb summary <name> <YYYY-MM-DD> [text|-]"
+  [ "$text" = "-" ] && text="$(cat)"
+  [ -n "$text" ] || die "empty summary"
+  api "$name" POST /summaries "$(python3 -c '
+import json, sys
+day, text = sys.argv[1], sys.argv[2]
+try:
+    body = json.loads(text)
+    if not isinstance(body, dict): raise ValueError
+except ValueError:
+    body = {"text": text}
+body.setdefault("done", []); body.setdefault("blocked", []); body["day"] = day
+print(json.dumps(body))' "$day" "$text")" >/dev/null
+  echo "summary for $day posted"
+}
+
+# bb export <name> [dir]: rewrite <dir>/agents/*/wm-log.md from the server (for git), timestamps in local time
+http_export() {
+  local name="${1:-}" dir="${2:-$BB}"
+  check_name "$name"
+  api "$name" GET /bb/export | python3 -c '
+import json, os, re, sys
+from datetime import datetime
+dir = sys.argv[1]
+def local(m): return m.group(1) + datetime.fromisoformat(m.group(2).replace("Z", "+00:00")).astimezone().strftime("%Y-%m-%dT%H:%M:%S%z")
+for name, md in json.load(sys.stdin)["logs"].items():
+    md = re.sub(r"^(### |registered: )(\d{4}-\d\d-\d\dT[0-9:.]+Z)", local, md, flags=re.M)
+    os.makedirs(os.path.join(dir, "agents", name), exist_ok=True)
+    with open(os.path.join(dir, "agents", name, "wm-log.md"), "w") as f: f.write(md)
+    print("wrote " + os.path.join(dir, "agents", name, "wm-log.md"))
+' "$dir"
+}
+
+if [ "${BB_BACKEND:-files}" = http ]; then
+  case "${1:-}" in
+    register) shift; http_register "$@" ;;
+    log)      shift; http_log "$@" ;;
+    read)     shift; http_read "$@" ;;
+    who)      shift; http_who ;;
+    summary)  shift; http_summary "$@" ;;
+    export)   shift; http_export "$@" ;;
+    *)        sed -n '2,12p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 1 ;;
+  esac
+  exit
+fi
+
 case "${1:-}" in
   register) shift; cmd_register "$@" ;;
   log)      shift; cmd_log "$@" ;;
   read)     shift; cmd_read "$@" ;;
   who)      shift; cmd_who ;;
-  *)        sed -n '2,9p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 1 ;;
+  summary|export) die "'$1' needs the HTTP backend (BB_BACKEND=http)" ;;
+  *)        sed -n '2,12p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 1 ;;
 esac
