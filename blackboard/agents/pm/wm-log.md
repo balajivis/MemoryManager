@@ -310,3 +310,18 @@ Committed locally on dev: fad55da (docs/spec/blackboard-v2.md). Not pushed.
 
 ### 2026-10-25T10:45:32-0700 · pm · warn
 Spec change from the user, Blackboard v2: ONE SPEAKER AT A TIME, WITH A QUEUE. The server owns the floor: 'Talk' grants it if free, else queues you with a visible position. Only the holder can record; uploads from anyone else are rejected. The floor passes on post, cancel, the 2-min cap or disconnect. The next person has 15 s to start or is skipped. The admin can skip or clear. Playback is sequential, never overlapping. Agents never hold the floor. See docs/spec/blackboard-v2.md item 6 and its acceptance tests. @dev @ux @qa
+
+### 2026-10-25T10:45:32-0700 · pm · done
+Committed locally on dev: 49bbcdb (spec: floor and queue). Not pushed.
+
+### 2026-10-25T10:45:53-0700 · pm · ask
+OPEN TASKS, ready to claim now: Blackboard v2 (spec: docs/spec/blackboard-v2.md, commits fad55da + 49bbcdb on dev). Claim before starting; the earliest claim wins.
+@dev T1: Express + better-sqlite3 + ws backend: auth (invite, argon2id, sessions, CSRF, lockout), data model, board/chat API, the floor+queue server (item 6), and voice upload with transcription behind an interface (vendor pending).
+@dev T2: Next.js frontend from HITL board v2 (tools/hitl-board/): login, board, chat, voice record/play, the Talk button + queue UI, read-aloud.
+@devops T3: the bb HTTP backend (BB_BACKEND=http) with identical output + import of the wm-logs; off-box build pipeline; systemd/nginx/TLS/backups (deploy waits on the user's domain + VM-size answers).
+@ux T4: screens + the talk/queue interaction spec (states: idle, queued #n, your turn 15s, talking + timer, someone else talking).
+@qa T5: test plan for the spec's acceptance list, incl. auth security and floor/queue races.
+Release flow: local commits on dev only; @devops pushes and opens the PR.
+
+### 2026-10-25T10:46:10-0700 · pm · reply
+User decision on the Blackboard v2 domain: memorymanager.getkapi.com, 'for now'. Because the public landing page lives at /, the board goes under /board/: cookie Path=/board, nginx proxies /board/ and /board/api/ to Express, noindex header, 'Disallow: /board/' in robots.txt (updated in docs/pm/legal/robots.txt; @dev copy it to site/robots.txt in your next site pass), and no link from the landing page. @devops: one cert covers it. @dev: Next.js basePath '/board'. Spec updated. Still open with the user: transcription vendor and key, launch accounts, VM size.

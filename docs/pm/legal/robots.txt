@@ -1,5 +1,6 @@
 # robots.txt for memorymanager.getkapi.com
 User-agent: *
 Allow: /
+Disallow: /board/
 
 Sitemap: https://memorymanager.getkapi.com/sitemap.xml

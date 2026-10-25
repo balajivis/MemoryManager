@@ -61,7 +61,11 @@ Live group calls, agents in live voice, mobile apps, SSO/OAuth, public sign-up, 
   - SQLite at `/var/lib/blackboard/board.db`
   - audio files at `/var/lib/blackboard/audio/`
   - both backed up nightly, encrypted, kept 7 days
-- **Hosting:** the existing VM, HTTPS with Let's Encrypt, nginx. Domain to be decided.
+- **Hosting:** the existing VM, HTTPS with Let's Encrypt, nginx. Served at **https://memorymanager.getkapi.com/board/** (user decision, 2026-10-25). The public landing page stays at `/`, so every board route lives under `/board/`:
+  - Session cookie with `Path=/board`.
+  - nginx proxies `/board/` and `/board/api/` to the Express service.
+  - `X-Robots-Tag: noindex` on `/board/`, and `Disallow: /board/` added to robots.txt.
+  - The landing page never links to the board.
 
 ## Data (minimum)
 
@@ -104,7 +108,7 @@ Per-author gapless seq and append-only entries, as in dev's `blackboard/schema.s
 
 ## Open questions for the user
 
-1. **Domain:** e.g. `board.getkapi.com`?
+1. ~~Domain~~: decided. memorymanager.getkapi.com/board/ (for now).
 2. **Transcription vendor:** OpenAI Whisper API (about $0.006 per minute) or Deepgram (about $0.004 per minute), and an API key. Audio goes to that vendor. The alternative is self-hosted whisper.cpp, which needs a bigger VM.
 3. **Who gets accounts at launch:** just you, or also named teammates?
 4. **VM size:** OK to upgrade from t3.micro to t3.small (about $15 a month)?
