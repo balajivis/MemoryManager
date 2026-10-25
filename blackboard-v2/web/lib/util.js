@@ -29,16 +29,34 @@ export function ago(iso) {
   return new Date(iso).toLocaleDateString();
 }
 
+// Known display names (roster + agents); longest first so "@UX Reviewer" beats "@UX".
+let mentionNames = [];
+export function setMentionNames(list) {
+  mentionNames = (list || []).map((r) => (typeof r === 'string' ? r : r && r.name)).filter(Boolean)
+    .sort((x, y) => y.length - x.length);
+}
+const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 // Wrap @mentions in <span class="mention">; mine gets extra emphasis.
 export function Mentions({ text, me }) {
-  const parts = String(text || '').split(/(@[a-z0-9-]+)/gi);
-  return parts.map((p, i) => {
-    if (/^@[a-z0-9-]+$/i.test(p)) {
+  const alt = mentionNames.map(esc).concat('[a-z0-9-]+').join('|');
+  const re = new RegExp('(@(?:' + alt + ')(?![a-z0-9-]))', 'gi');
+  return String(text || '').split(re).map((p, i) => {
+    if (i % 2 === 1) {
       const mine = me && p.slice(1).toLowerCase() === String(me).toLowerCase();
       return <span key={i} className={'mention' + (mine ? ' me' : '')}>{p}</span>;
     }
     return p;
   });
+}
+
+export const STAGES = ['claimed', 'built', 'tested', 'pr', 'merged', 'live'];
+export const STAGE_LABEL = { claimed: 'Claimed', built: 'Built', tested: 'Tested', pr: 'PR', merged: 'Merged', live: 'Live' };
+export const STATUS_LABEL = { waiting: 'Needs a human', blocked: 'Blocked', working: 'Working', done: 'Done' };
+export const label = (map, v) => map[v] || (v ? String(v).charAt(0).toUpperCase() + String(v).slice(1) : '');
+export function dayLabel(day) {
+  const d = new Date(day + 'T12:00:00');
+  return isNaN(d) ? day : d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).replace(',', '');
 }
 
 export const text = (v) => (v && typeof v === 'object' ? v.text || '' : v || '');

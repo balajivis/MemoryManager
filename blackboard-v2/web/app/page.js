@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLive } from '../lib/live';
 import { api } from '../lib/api';
+import { setMentionNames } from '../lib/util';
 import Board, { Team } from '../components/Board';
 import Chat from '../components/Chat';
 import Log, { mentionsMe } from '../components/Log';
@@ -61,6 +62,7 @@ export default function Home() {
   const warnBadge = s.feed.slice(0, 20).some((e) => (e.kind === 'warn' || (e.kind === 'ask' && mentionsMe(e, s.me.name))) && tab !== 'log');
   // On desktop only chat|log apply to the right column; board/team are mobile panes.
   const desk = tab === 'log' ? 'log' : 'chat';
+  setMentionNames([...(s.board && s.board.roster || []), s.me]);
 
   return (
     <main className="wrap" data-tab={tab} data-desk={desk}>

@@ -13,6 +13,7 @@ let nextId = 10;
 const chat = [
   { id: 1, author: 'pm', author_kind: 'agent', text: 'Spec is approved. @Balaji please look at the board.', voice_note_id: null, created_at: now() },
   { id: 2, author: 'Balaji', author_kind: 'human', text: 'Thanks @pm, on it.', voice_note_id: null, created_at: now() },
+  { id: 3, author: 'pm', author_kind: 'agent', text: 'Thanks @UX Reviewer, see the drawer.', voice_note_id: null, created_at: now() },
 ];
 const feed = [
   { author: 'dev', seq: 2, kind: 'done', text: 'Frontend skeleton built.', created_at: now() },
@@ -27,7 +28,7 @@ const board = {
     { id: 3, title: 'Login', stage: 'live', status: '', needed: '', owner: 'dev', created_at: now(), updated_at: now() },
     { id: 4, title: 'Deploy pipeline', stage: 'tested', status: 'blocked', needed: 'VM size approval', owner: 'devops', created_at: now(), updated_at: now() },
   ],
-  roster: [{ name: 'Balaji', role: 'admin', kind: 'human', online: true }, { name: 'pm', role: 'product', kind: 'agent', online: true }, { name: 'dev', role: 'developer', kind: 'agent', online: false }],
+  roster: [{ name: 'Balaji', role: 'admin', kind: 'human', online: true }, { name: 'pm', role: 'product', kind: 'agent', online: true }, { name: 'dev', role: 'developer', kind: 'agent', online: false }, { name: 'UX Reviewer', role: 'ux', kind: 'agent', online: true }],
   tiles: {},
 };
 const notes = {}; // id -> {buf, ms}
