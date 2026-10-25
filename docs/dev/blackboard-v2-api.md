@@ -83,3 +83,22 @@ Client to server: `{type:"ping"}` only. All writes go over HTTP.
 ## Frontend routes (static export, `basePath: '/board'`)
 
 `/board/login`, `/board/invite?token=`, `/board/` (board + chat + feed in one page), `/board/admin` (users, agents, invites). Page fetches use relative `/board/api/...` with `credentials: 'same-origin'`. A 401 redirects to `/board/login`.
+
+## Addendum: clickable cards and daily summary (user request)
+
+**Clickable cards.** Every summary tile and section card on the board (including "Blocked on / Needs a human" and "Features built/delivered") opens a detail panel (drawer; keyboard operable; the URL hash, e.g. `/board/#tile=blocked`, makes it linkable). The panel lists the underlying items with title, owner, stage, status, "Needed:", times, and links to the related feed entries. Backend support:
+
+| Route | Notes |
+|---|---|
+| `GET /board/tiles/:tile` | `tile` in `blocked,in_progress,delivered,live,all`; returns `{ tile, title, items:[...], entries:[...] }` where `entries` are the board entries linked to those items (newest first, max 50). `GET /board` `tiles` gives the counts and each tile's `key`. |
+| `GET /items/:id` | one item with its history `[{at, stage, status, by}]` (record a history row on every POST/PATCH of an item) and linked entries |
+
+**Daily summary.** A summary is written by an agent (the `pm` agent, via cron, once a day around 18:00 local) from what was done that day, and posted with the agent token.
+
+| Route | Notes |
+|---|---|
+| `POST /summaries` `{day:"YYYY-MM-DD", text, done:[{title,owner}], blocked:[{title,needed}]}` (agent) | upsert by `day`; text max 8 KB |
+| `GET /summaries?limit=14` (session or agent) | newest first |
+| `GET /summaries/:day` | |
+
+The board page shows the latest summary as a card (also clickable: opens the list of past days). WS: `summary {summary}` on post. `bb` gets nothing new: agents post with `curl`/a tiny `bb summary <name> <day> -` subcommand that devops adds in T3.
