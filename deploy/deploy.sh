@@ -33,6 +33,7 @@ require_merged() {  # deploys only ever come from main (docs/process/release-pro
 }
 
 guard_https() {  # an HTTPS vhost behind Cloudflare's Flexible proxy would redirect-loop
+  [ "${FORCE_HTTP_VHOST:-}" = 1 ] && return 0                            # explicitly staying on the HTTP vhost
   vm "test -f /etc/letsencrypt/live/$DOMAIN/fullchain.pem" || return 0   # no cert yet: HTTP vhost, always safe
   local ip="${HOST#*@}"
   dig +short "$DOMAIN" A | grep -qx "$ip" && return 0
@@ -48,10 +49,10 @@ ship_tree() {  # ship_tree <commit> <path-in-repo> <remote-dir>
 # Runs on the VM: validates a candidate config tree, and installs it if asked.
 REMOTE_SERVER='
 set -euo pipefail
-src="$1"; mode="$2"; commit="$3"; domain="$4"
+src="$1"; mode="$2"; commit="$3"; domain="$4"; force_http="${5:-}"
 cert="/etc/letsencrypt/live/$domain/fullchain.pem"
 site="$src/nginx/sites/memorymanager-http.conf"
-[ -f "$cert" ] && site="$src/nginx/sites/memorymanager-https.conf"
+[ -f "$cert" ] && [ "$force_http" != 1 ] && site="$src/nginx/sites/memorymanager-https.conf"
 
 # 1. Test the candidate in a scratch tree, with includes pointed at the candidate files.
 t="$src/.test"; rm -rf "$t"; mkdir -p "$t/sites-enabled"
@@ -194,7 +195,7 @@ case "$cmd" in
     [ "$cmd" = server ] && { require_merged "$c"; guard_https; }
     ship_tree "$c" deploy "/tmp/mm-deploy-$short"
     mode=check; [ "$cmd" = server ] && mode=install
-    vm "bash -s -- /tmp/mm-deploy-$short $mode $short $DOMAIN" <<< "$REMOTE_SERVER"
+    vm "bash -s -- /tmp/mm-deploy-$short $mode $short $DOMAIN ${FORCE_HTTP_VHOST:-0}" <<< "$REMOTE_SERVER"
     ;;
   site)
     [ -n "${1:-}" ] || die "usage: deploy.sh site <commit>"
