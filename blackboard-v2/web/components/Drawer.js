@@ -51,7 +51,7 @@ function StepBar({ it }) {
   return (<>
     <div className="steps" role="img" aria-label={'Step ' + (cur + 1) + ' of ' + STAGES.length + ': ' + label(STAGE_LABEL, it.stage)}>
       {STAGES.map((st, i) => <span key={st} className={i <= cur ? (i === cur ? cls : 'on') : ''} />)}</div>
-    <div className="i-meta">{STAGES.map((st, i) => <span key={st} style={i === cur ? { fontWeight: 700 } : undefined}>{STAGE_LABEL[st]}</span>)}</div>
+    <div className="step-labels" aria-hidden="true">{STAGES.map((st, i) => <span key={st} style={i === cur ? { fontWeight: 700 } : undefined}>{STAGE_LABEL[st]}</span>)}</div>
   </>);
 }
 
