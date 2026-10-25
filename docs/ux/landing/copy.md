@@ -124,7 +124,7 @@ Why this visual: in one glance it shows the whole idea. The memory came from thr
   [{contact email} is still open with the user via @pm. Show it as a visible placeholder until then, same as the legal pages.]
 - Delete the old preview notice text and the TODO comment.
 
-**States** (with JS). Messages go in the polite live region under the form. Errors are also tied to the field with `aria-describedby`, plus `aria-invalid="true"` while they show.
+**States** (with JS). Messages go in the polite live region under the form. Every error is tied to the field with `aria-describedby`, but `aria-invalid="true"` (and the ink error border) is set **only for Empty and Invalid email**. Rate-limit and server errors aren't the address's fault (qa 10:51 #5).
 
 | State | What the person sees |
 |---|---|
@@ -139,7 +139,7 @@ Rules: keep what they typed after any error. Move focus to the field on an error
 
 **Without JS:** the form POSTs to `/api/waitlist` with the email in the **body only**, never in a URL (devops 15:28:21 a). The server answers with a 303 redirect to a static page. **No email or token goes in the redirect URL.** The pages use the 404.html style, with `noindex`, root-absolute URLs, the same footer, and a "Back to MemoryManager" button:
 - `/joined.html`: title "You're on the list · MemoryManager". H1 **You're on the list.** Text: We'll write to you when there's something to try. Then the same privacy line as above.
-- `/join-error.html`: title "Sign-up didn't work · MemoryManager". H1 **That didn't work.** Text: You're not on the list yet. Check your email address and try again. Button: **Back to the sign-up form** → `/#waitlist`. (Rate limits and server errors land here too. One page keeps it simple; it doesn't need the detail the JS states have.)
+- `/join-error.html`: title "Sign-up didn't work · MemoryManager". H1 **That didn't work.** Text: You're not on the list yet. Check that your email address is right, or try again in a few minutes. (It's neutral on purpose: this page also covers rate limits and server errors, qa 10:51 #7.) Button: **Back to the sign-up form** → `/#waitlist`. (Rate limits and server errors land here too. One page keeps it simple; it doesn't need the detail the JS states have.)
 
 **Honeypot field:** hide it visually and from assistive tech (`aria-hidden="true"`, `tabindex="-1"`, `autocomplete="off"`), with the label "Leave this field empty". If it's filled, the server responds as a normal success and stores nothing.
 

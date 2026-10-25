@@ -209,3 +209,17 @@ T4 DRAFT is ready: docs/ux/blackboard-v2-screens.md (re @pm 10:45:53). @dev, bui
 Key calls: (1) tap only, no press-and-hold in v1 (accessibility, and you can't hold while queued); (2) one tap when the floor is free (no second Start); (3) ask for mic permission when Talk is tapped, not on the turn, so the prompt doesn't eat the 15s; (4) the holder keeps the floor during upload, retry for 20s max on failure; (5) one playback lane per browser, never overlapping, and it PAUSES while you're talking so auto-play doesn't leak into your mic; (6) auto-play and read-aloud default OFF; (7) on mobile the floor bar and the your-turn banner are global across tabs.
 Also: login and invite screens (no account enumeration), a Chat | Agent log tab with kind chips and a 'Mentions me' filter, People and invites (copy-link, since there's no email sender), Agents and tokens (shown once), and per-user Settings.
 @dev technical flags: Safari records audio/mp4, not webm, so accept both or iPhone users can't talk. WS events the UI needs are in §5. @qa: S0-S7 plus the edge cases in §5 for T5. @pm: invite expiry (7d?) and the auto-play default.
+
+### 2026-10-25T10:50:47-0700 · ux · done
+Committed locally on dev: 723b5b1 (T4 screens spec + log). Not pushed.
+
+### 2026-10-25T10:51:17-0700 · ux · reply
+Re @dev 10:48:52 (talk/queue states) + docs/dev/blackboard-v2-api.md: my spec is docs/ux/blackboard-v2-screens.md §1. Your 5 states map onto S0-S7. Add these 3: S2 requesting (button disabled, <1s), S6 sending (holder keeps the floor during upload), S7 send failed (retry/discard, floor held 20s max). Split 'idle' into S0 free (one tap starts recording) and S1 busy ('you'd be #n').
+3 API gaps, cc @qa:
+(1) CAP RACE (important): the 120s cap runs from grantedAt and releases the floor, and POST /voice/notes needs the holder. So a note auto-sent at 2:00 gets 403 not_holder, and someone queued who took 10s to start only gets 110s. Fix: count the 120s from /floor/start (recording start), and keep the holder for a ~20s upload grace after stop or cap before releasing.
+(2) Safari: accept audio/mp4 (AAC) as well as audio/webm, with magic-byte checks for both, serving GET .../audio with the stored type. Otherwise iPhone and Safari users can't talk.
+(3) A REASON on release: add reason to the floor event (posted | cancelled | cap | skipped_timeout | admin_skip | disconnect | admin_clear), so the UI can say 'You missed your turn, so you've moved to the back of the line (#4)' or 'The admin ended your turn. Your recording wasn't sent.'
+Your 3s reconnect grace is good; the 'lost your place' copy only applies after it. Settings (auto-play, read-aloud, chime) can be localStorage in v1 if a /me/settings endpoint is too much; I'd said server-stored, but either is fine.
+
+### 2026-10-25T10:55:03-0700 · ux · reply
+Re @qa 10:51:24 #5 and #7 (waitlist): both accepted, and copy.md §8 is updated. #5 was my spec's fault: aria-invalid plus the error border now apply ONLY to empty and invalid_email; aria-describedby stays on for every error. #7: join-error.html now reads 'You're not on the list yet. Check that your email address is right, or try again in a few minutes.', which is neutral for rate limits and server errors. @dev: please apply both in your waitlist fix pass.

@@ -1,0 +1,135 @@
+/* UX polish layer for Blackboard v2 (owner: ux). Loaded after globals.css; uses its tokens and class names only.
+   Spec: docs/ux/blackboard-v2-screens.md. Every animation is switched off under prefers-reduced-motion (bottom). */
+
+:root {
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  --t-fast: 140ms;
+  --t-med: 220ms;
+  --ring-attn: color-mix(in srgb, var(--attn) 35%, transparent);
+  --ring-block: color-mix(in srgb, var(--block) 35%, transparent);
+}
+::selection { background: color-mix(in srgb, var(--accent) 28%, transparent); }
+
+/* ---------- Buttons: tactile, calm ---------- */
+.btn { transition: background-color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease); }
+.btn:not(:disabled):hover { border-color: var(--muted); }
+.btn.primary:not(:disabled):hover { box-shadow: 0 1px 0 color-mix(in srgb, var(--ink) 15%, transparent), 0 2px 8px color-mix(in srgb, var(--accent) 25%, transparent); }
+.btn:not(:disabled):active { transform: translateY(1px) scale(.985); }
+.icon-btn { opacity: .45; transition: opacity var(--t-fast) var(--ease), background-color var(--t-fast) var(--ease); }
+.icon-btn:hover, .icon-btn:focus-visible, .msg:hover .icon-btn, .msg:focus-within .icon-btn { opacity: 1; }
+.icon-btn:hover { background: var(--sunk); }
+@media (hover: none) { .icon-btn { opacity: .8; } }
+
+/* ---------- Connection status: alive vs reconnecting ---------- */
+.dot.on { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 45%, transparent); animation: live-ring 2.4s var(--ease) infinite; }
+.dot:not(.on) { background: var(--attn); animation: blink 1.2s steps(2, start) infinite; }
+@keyframes live-ring { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 45%, transparent); } 70%, 100% { box-shadow: 0 0 0 6px transparent; } }
+@keyframes blink { to { opacity: .35; } }
+
+/* ---------- Panels & tiles ---------- */
+section.panel { transition: border-color var(--t-med) var(--ease), box-shadow var(--t-med) var(--ease); }
+a.stat { transition: background-color var(--t-fast) var(--ease); }
+a.stat:hover { background: var(--sunk); }
+.stat .n { font-variant-numeric: tabular-nums; }
+.directive-banner { animation: drop-in var(--t-med) var(--ease) both; }
+@keyframes drop-in { from { opacity: 0; transform: translateY(-4px); } }
+
+/* ---------- The floor: make every state readable at a glance ---------- */
+.floor { transition: background-color var(--t-med) var(--ease), box-shadow var(--t-med) var(--ease); border-radius: 0 0 12px 12px; }
+/* The status sentence stays for screen readers, but when a bigger visual line says the same thing, hide it visually */
+.floor:not([data-state="idle"]) .floor-line { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Someone else is talking: a live equaliser next to the name */
+.floor .talking { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 15px; }
+.floor .talking::before {
+  content: ""; width: 14px; height: 14px; flex: none;
+  background:
+    linear-gradient(var(--ok), var(--ok)) 0 100% / 3px 40% no-repeat,
+    linear-gradient(var(--ok), var(--ok)) 50% 100% / 3px 90% no-repeat,
+    linear-gradient(var(--ok), var(--ok)) 100% 100% / 3px 60% no-repeat;
+  animation: eq 1s ease-in-out infinite;
+}
+@keyframes eq {
+  0%, 100% { background-size: 3px 40%, 3px 90%, 3px 60%; }
+  33% { background-size: 3px 85%, 3px 35%, 3px 75%; }
+  66% { background-size: 3px 55%, 3px 70%, 3px 30%; }
+}
+.floor .talking .mono { color: var(--muted); font-size: 13px; }
+
+/* Queued: the position is the headline */
+.floor .queued { font-size: 15px; }
+.floor .queued strong { display: inline-grid; place-items: center; min-width: 2.2em; padding: 2px 8px; margin-left: 4px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+
+/* My turn: unmistakable, but not frantic. Glow pulses, the Start button grows. */
+.floor[data-state="turn"] { box-shadow: inset 0 0 0 2px var(--attn); animation: turn-glow 1.6s var(--ease) infinite; }
+.floor[data-state="turn"] .turn { font-size: 17px; font-weight: 600; color: var(--ink); }
+.floor[data-state="turn"] .turn strong { color: var(--attn); font-size: 20px; }
+.floor[data-state="turn"] .btn.primary { padding: 12px 20px; font-size: 15px; }
+@keyframes turn-glow { 0%, 100% { box-shadow: inset 0 0 0 2px var(--attn), 0 0 0 0 var(--ring-attn); } 50% { box-shadow: inset 0 0 0 2px var(--attn), 0 0 0 6px var(--ring-attn); } }
+
+/* Recording: a ripple on the dot, a big honest timer */
+.floor[data-state="recording"] { box-shadow: inset 0 0 0 2px var(--block); }
+.floor .rec { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+.floor .rec strong { font-size: 20px; color: var(--block); }
+.rec-dot { animation: rec-ripple 1.4s var(--ease) infinite; }
+@keyframes rec-ripple { 0% { box-shadow: 0 0 0 0 var(--ring-block); } 70%, 100% { box-shadow: 0 0 0 8px transparent; } }
+
+/* The queue: numbered pills, "(you)" row highlighted */
+.queue li { padding: 6px 8px; border-radius: 8px; transition: background-color var(--t-fast) var(--ease); animation: drop-in var(--t-med) var(--ease) both; }
+.queue li .mono { display: inline-grid; place-items: center; min-width: 2em; padding: 1px 6px; border-radius: 999px; background: var(--sunk); border: 1px solid var(--line); font-size: 12px; }
+.queue li:has(> .btn) { justify-content: space-between; }
+.queue li:first-child .mono { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
+
+/* On phones, the voice panel sticks to the top whenever it needs you (spec §1: never miss a turn) */
+@media (max-width: 960px) {
+  section.panel:has(.floor[data-state="turn"]),
+  section.panel:has(.floor[data-state="recording"]) { position: sticky; top: 8px; z-index: 5; box-shadow: 0 6px 24px color-mix(in srgb, var(--ink) 18%, transparent); }
+}
+
+/* ---------- Chat ---------- */
+.msgs { scroll-behavior: smooth; scrollbar-width: thin; scrollbar-color: var(--line) transparent;
+  mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 6px), transparent 100%); }
+.msg { animation: msg-in var(--t-med) var(--ease) both; padding: 4px 6px; margin-inline: -6px; border-radius: 10px; transition: background-color var(--t-fast) var(--ease); }
+.msg:hover { background: color-mix(in srgb, var(--sunk) 70%, transparent); }
+@keyframes msg-in { from { opacity: 0; transform: translateY(6px); } }
+.msg.agent .m-text { border-left: 2px solid var(--agent-soft); padding-left: 8px; }
+.msg:has(.mention.me) { background: color-mix(in srgb, var(--attn-soft) 60%, transparent); }
+.mention.me { background: var(--attn-soft); color: var(--attn); }
+.m-time { opacity: .8; }
+
+/* Voice notes: tidy player, transcript reads like a quote, shimmer while it's being made */
+.voice audio { height: 36px; accent-color: var(--accent); border-radius: 999px; }
+.transcript { border-left: 2px solid var(--line); padding: 2px 0 2px 10px; color: var(--ink); }
+.transcript[data-status="pending"] .note {
+  background: linear-gradient(90deg, var(--muted) 0%, var(--line) 50%, var(--muted) 100%) 0 0 / 200% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent; animation: shimmer 1.6s linear infinite;
+}
+.transcript[data-status="failed"] .note { color: var(--block); }
+@keyframes shimmer { to { background-position: -200% 0; } }
+
+/* Composer */
+.composer .row input { transition: border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease); }
+.composer .row input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); outline: none; }
+
+/* ---------- Agent feed: kind at a glance ---------- */
+.feed li { border-left: 3px solid transparent; transition: background-color var(--t-fast) var(--ease); animation: msg-in var(--t-med) var(--ease) both; }
+.feed li:has(.chip.block) { border-left-color: var(--block); }
+.feed li:has(.chip.attn) { border-left-color: var(--attn); }
+.feed li:has(.chip.ok) { border-left-color: var(--ok); }
+.feed li:has(.mention.me) { background: color-mix(in srgb, var(--attn-soft) 55%, transparent); }
+
+/* ---------- Work items ---------- */
+.items li { transition: background-color var(--t-fast) var(--ease); }
+.items li:hover { background: color-mix(in srgb, var(--sunk) 70%, transparent); }
+.steps span { transition: background-color var(--t-med) var(--ease); }
+.needed { animation: drop-in var(--t-med) var(--ease) both; }
+
+/* ---------- Empty states: friendlier ---------- */
+.empty { text-align: center; padding-block: 22px; }
+
+/* ---------- Respect reduced motion: no animation, no smooth scroll ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  .floor[data-state="turn"] { box-shadow: inset 0 0 0 3px var(--attn); }
+  .transcript[data-status="pending"] .note { background: none; color: var(--muted); }
+}
