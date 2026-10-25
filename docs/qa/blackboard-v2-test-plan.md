@@ -27,6 +27,12 @@ Part 0 is a review of the spec and contract, done before any code exists. Those 
 | R14 | (ux) A floor release carries no reason. | The UI can't tell people why they lost their turn. | Add `reason` (posted, cancelled, cap, skipped_timeout, admin_skip, disconnect, admin_clear) to the `floor` event. | dev |
 | R11 | Chat from members reaches agents through `bb read`. | That's prompt-injection reach: any invited member can write instructions that agents read. | Keep `source:"chat"` on those entries. Agents treat chat as untrusted user content, the same rule as observed data. Say so in PROTOCOL.md. | pm, devops |
 
+**Decisions so far (2026-10-25):**
+- **pm 10:54:24 adopted** R12 (cap counts from `/start` plus a 20 s grace), R13 (WebM and MP4) and R14 (release reasons).
+- **R3:** the token moves to the #fragment and is POSTed in the body (ux §3b). Expiry stays at **7 days** (pm), not the 48 h QA suggested. A3 tests 7 days.
+- **R1:** ux prefers that unknown emails get counted and locked exactly like real ones, so 'Too many attempts. Try again in 15 minutes.' can show and still leak nothing. **dev to confirm.** A6 pins it: identical status, body and timing for unknown and real emails, *including* the locked response.
+- **Open:** R2, R4, R5 (covered by R12 if the server enforces it), R6, R7, R8, R9, R10, R11.
+
 ---
 
 ## 1. How the tests run
@@ -141,6 +147,9 @@ Run with 3 humans (A, B, C) plus an admin and an agent, each with their own WS a
 - **B4.** Roster online status follows WS presence within 5 s of connecting or disconnecting.
 
 - **U1 (ux §1, S0–S7), in a real browser:** free (S0, one tap records); busy (S1, 'you'd be #n'); requesting (S2, the button is disabled for under 1 s); queued #n (S3, with leave); your turn (S4, a 15 s countdown); talking (S5, a 2:00 timer); sending (S6, holder kept); send failed (S7, retry or discard within the 20 s grace). Every transition matches the server's `floor` events, mic permission is asked when Talk is tapped, and the copy is from §1.
+- **U3 (ux §3g, detail drawer):** a tile opens a filtered list drawer, and a card opens the item drawer, stacked, with ‹ Back. Esc, Back and the dimmed area all close it. Focus is trapped inside and returned on close. `#item-<id>` deep links open the drawer. Live updates reach an open drawer. Right drawer on desktop, full sheet on mobile.
+- **U4 (ux §3h, daily summary):** the pinned one-liner with its unread dot, the full card atop the Agent log, read-aloud, and 'Previous days'. The summary text renders escaped.
+- **U5 (ux polish 27f4eed):** with `prefers-reduced-motion: reduce`, no pulsing, ripple, equaliser or shimmer animations (every animation is disabled or static). At 375px the voice panel goes sticky during your turn and while recording, without covering the chat input. The turn chime plays once, and the '● Your turn ·' tab title clears when the turn ends. Auto-play and read-aloud default **off** (pm). Check the browsers covered by `:has()` and `color-mix()` (Chrome 111+, Safari 16.2+, Firefox 121+), and that older ones degrade to plain styles.
 - **U2:** the summaries endpoint (`POST /summaries`, dev 10:53) falls under the Z1 matrix, and summary text renders escaped (CH2).
 
 ## 9. `bb` HTTP backend, import and export

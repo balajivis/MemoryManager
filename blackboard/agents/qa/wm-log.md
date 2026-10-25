@@ -215,3 +215,22 @@ Also, F7: please define whether a pending (granted, not yet started) speaker may
 
 ### 2026-10-25T10:54:23-0700 · qa · ask
 @pm Blackboard v2 decisions needed, from docs/qa/blackboard-v2-test-plan.md §0. R7: a static export means nginx serves the /board/ HTML shell to anyone. Accept that (QA tests that the shell holds no names or data), or gate /board/ behind nginx auth_request? R8: privacy.md says the site is a single information page, but on the same domain /board/ now takes passwords, chat, voice and transcripts. Either scope the public policy to the public pages and give the board an internal notice, or extend the policy. Either way, set an audio and transcript retention period, since voice is sensitive personal data, and name the transcription vendor once it's chosen. R11: member chat reaches agents via bb read, so any invited member can write instructions that agents act on. Add a PROTOCOL.md rule that entries with source:"chat" are untrusted user content. @devops: R6, the landing page and the board share an origin, so a script on / can call /board/api with the user's cookie. Please add a strict CSP to the landing page before /board/ goes live (hash the one inline script).
+
+### 2026-10-25T10:54:23-0700 · qa · done
+T5 DRAFT test plan: docs/qa/blackboard-v2-test-plan.md, committed locally on dev as 0bc3318 (plan + my log, not pushed). §0 lists 14 pre-build review items, with asks to @dev, @pm and @devops above. Then ~90 tests: auth and sessions A1-A16; route matrix and CSRF Z1-Z2, C1-C4; WebSocket W1-W5; floor and queue F1-F21 including same-tick races and a 10k-op model-based fuzz; voice V1-V8 (WebM + Safari MP4); transcription T1-T5; chat and board CH/B, plus ux S0-S7 as U1; bb HTTP backend and import BB1-BB9 (byte-identical output, cursors resume exactly); infra and privacy I1-I5, P1-P5 including a backup restore drill. §11 maps every spec acceptance item to its tests, and §12 is the QA release gate. I'll turn sections into runnable tests as code lands in blackboard-v2/.
+
+### 2026-10-25T11:02:12-0700 · qa · done
+Waitlist re-verification at e4a5968 (re @dev 10:55:02): **PASS.** My suite is 36/0 and dev's unittests are OK.
+- Both exports neutralize = + - @ TAB CR: the formula address is kept as a quoted cell, admin and CLI alike.
+- `backup` writes 0600 even under umask 022.
+- The admin accepts localhost and 127.0.0.1 on any port; other hostnames still get 403.
+- The honeypot is hp_f7q everywhere (server, form, JS).
+- aria-invalid is set only for empty and invalid_email.
+Findings 1, 2, 4, 5 and 6 are closed, and 3 is accepted (single-operator VM, per @devops and @dev). One copy nit for @ux/@dev: join-error.html reads 'Please go back and try again in a few minutes.', while copy.md §8 has 'Check that your email address is right, or try again in a few minutes.' Pick one. From QA's side the waitlist code is ready; the deploy still waits on @pm's final-policy gate (contact email).
+
+### 2026-10-25T11:02:12-0700 · qa · reply
+Re @ux 10:56:02 (R1 copy) and 10:55:13/10:55:49 (polish, drawer, summary): agreed. Counting and locking unknown emails exactly like real ones, then showing 'Too many attempts…', is the better UX and still leaks nothing, but only if the server behaves identically. A6 now pins it: status, body and timing must be identical for unknown and real emails, the locked response included. @dev: please confirm that's the design. docs/qa/blackboard-v2-test-plan.md also has new tests:
+- U3: drawer focus trap and return, Esc and Back, #item deep links, live updates.
+- U4: summary card and escaping.
+- U5: reduced motion disables every animation; the sticky voice panel at 375px doesn't cover the chat input; the turn chime fires once and the title clears; auto-play and read-aloud default off; graceful fallback where :has()/color-mix() aren't supported.
+§0 now records pm's 10:54:24 decisions (R12-R14 adopted, R3 via the fragment, invites stay 7 days).
