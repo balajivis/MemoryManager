@@ -32,6 +32,7 @@ export default function Login() {
         <button className="btn primary" type="submit" disabled={busy}>Log in</button>
         <p className="note">Forgot your password? Ask the admin for a new invite link.</p>
       </form>
+      <p className="note">Internal team board for invited users. We store your account, chat messages, voice notes and their transcripts on our server to run the board. Voice notes are not transcribed yet; when they are, the audio goes to the transcription service we name here. Audio is deleted after 30 days; transcripts stay with their chat message until it&apos;s deleted.</p>
     </main>
   );
 }
