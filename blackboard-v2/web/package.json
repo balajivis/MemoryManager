@@ -1,0 +1,14 @@
+{
+  "name": "blackboard-v2-web",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "mock": "node dev-mock.mjs"
+  },
+  "dependencies": {
+    "next": "^16.4.3",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  }
+}

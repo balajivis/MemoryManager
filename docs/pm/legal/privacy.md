@@ -4,7 +4,7 @@ DRAFT. Not yet reviewed by a lawyer. Placeholders in {braces} must be filled in 
 
 Last updated: {date}
 
-This policy covers the website at memorymanager.getkapi.com (the "site"). The site is run by Kapi Inc. ("we"). MemoryManager is in early development. Today the site is an information page with a waitlist, plus these policy pages. This policy describes only what the site does today. We'll update it before MemoryManager collects anything more.
+This policy covers the website at memorymanager.getkapi.com (the "site"). The site is run by Kapi Inc. ("we"). MemoryManager is in early development. Today the site is an information page with a waitlist, plus these policy pages. This policy describes only what the site does today. It covers the public pages. The team board at /board/ is an internal tool for invited users only, with its own notice on its sign-in page. We'll update it before MemoryManager collects anything more.
 
 ## What we collect
 

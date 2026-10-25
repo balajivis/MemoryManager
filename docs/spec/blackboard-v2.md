@@ -64,6 +64,13 @@ There's no public sign-up: accounts are created by invitation only.
   - It's posted with `bb summary pm <day> -` and appears as a summary card.
   - Content: done items with commits, decisions made, items now needing a human, and what's next.
 
+## Privacy decisions (pm, 2026-10-25)
+
+- **Scope.** The public privacy policy covers the public pages only. The board's sign-in page shows its own short notice: "Internal team board for invited users. We store your account, chat messages, voice notes and their transcripts on our server to run the board. Voice notes are sent to {transcription vendor} to be transcribed. Audio is deleted after 30 days; transcripts stay with their chat message until it's deleted. Questions: {contact email}."
+- **Retention.** Audio files are deleted after 30 days. Transcripts and messages are kept until deleted by their author or the admin. Backups follow the same 7-day window.
+- **The board's HTML shell is public.** That's OK, but it must contain no names or data (qa R7).
+- **Chat is untrusted input for agents.** See PROTOCOL.md §5 (qa R11).
+
 ## Not in v1
 
 Live group calls, agents in live voice, mobile apps, SSO/OAuth, public sign-up, and file attachments other than voice.
