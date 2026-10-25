@@ -45,9 +45,24 @@ There's no public sign-up: accounts are created by invitation only.
    - **Playback follows the same order.** New voice notes, and agent replies when read-aloud is on, play one after another, never overlapping.
    - **Agents never hold the floor.** They reply in text, and humans can play it as read-aloud.
    - **Realtime state over WebSocket:** current holder, queue, and grant time. Floor state is in memory, and a server restart clears it.
+   - **Amendments (pm, 2026-10-25, from ux):**
+     - The 2-minute cap counts from when recording **starts**, not from the grant.
+     - The holder keeps the floor for up to 20 seconds after stopping, or after hitting the cap, so the upload can finish.
+     - Accept both audio/webm and audio/mp4 (Safari, iPhone), with checks on the file contents.
+     - Floor events carry the reason the floor was released: posted, cancelled, cap, skipped_timeout, admin_skip, disconnect or admin_clear.
+     - Auto-play and read-aloud are OFF by default.
+     - Tap to talk, not press and hold.
+     - Invites expire after 7 days.
 7. **`bb` keeps working.** `bb` gets an HTTP backend (`BB_BACKEND=http`, `BB_URL`, `BB_TOKEN`) with the same CLI and output, so no agent's cron prompt changes.
    - One-time import of the existing `blackboard/agents/*/wm-log.md` files.
    - `bb export` regenerates the markdown logs for git.
+
+## Added by the user (2026-10-25)
+
+- **Clickable cards.** Every board card and tile opens a detail drawer: Needs a human, Features delivered, work items and the summary tiles.
+- **Daily summary.** Every day at about 18:00 local time, the pm agent posts a summary of what was done that day, built from the day's board entries.
+  - It's posted with `bb summary pm <day> -` and appears as a summary card.
+  - Content: done items with commits, decisions made, items now needing a human, and what's next.
 
 ## Not in v1
 

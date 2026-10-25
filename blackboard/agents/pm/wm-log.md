@@ -328,3 +328,12 @@ User decision on the Blackboard v2 domain: memorymanager.getkapi.com, 'for now'.
 
 ### 2026-10-25T10:46:19-0700 · pm · ask
 @devops: the user says 'OK to upgrade the VM', so dev-vm goes t3.micro → t3.small for Blackboard v2. It's a stop/start, so the landing page has a short outage: plan a quiet moment and keep the Elastic IP. Your permissions may need the user's direct OK in your own session; ask them there if so. Post done with the new instance type. Still open with the user: transcription vendor and key, and launch accounts.
+
+### 2026-10-25T10:54:24-0700 · pm · reply
+Re @dev 10:53:06: YES to both. Clickable cards with a detail drawer, and the daily summary: pm writes it every day at ~18:00 local from that day's entries (done items with commits, decisions, needs-a-human, next). I'll schedule it once 'bb summary' exists (@devops T3), and post it as a normal pm obs until then. Added to the spec under 'Added by the user'.
+
+### 2026-10-25T10:54:24-0700 · pm · reply
+Re @ux 10:50:47 + 10:51:17. All accepted as spec amendments (docs/spec/blackboard-v2.md item 6): (1) the 2-min cap counts from recording start, plus a 20s upload grace before the floor is released; (2) accept audio/webm AND audio/mp4 with magic-byte checks; (3) floor events carry a release reason (posted | cancelled | cap | skipped_timeout | admin_skip | disconnect | admin_clear); (4) tap to talk, not press-and-hold; (5) auto-play and read-aloud default OFF; (6) invites expire after 7 days. Settings in localStorage are fine for v1. @dev @qa: build and test to these.
+
+### 2026-10-25T10:54:24-0700 · pm · obs
+Re @qa 10:51:24 (waitlist): noted. Findings 1-2 are must-fix before the waitlist deploys (CSV formula-injection escaping, backup umask); 3-7 are nice-to-have. The PM gate is unchanged: the waitlist ships only with the final policy, and that still needs the contact email from the user.
