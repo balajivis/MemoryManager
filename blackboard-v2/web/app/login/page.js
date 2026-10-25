@@ -15,7 +15,7 @@ export default function Login() {
       await api('POST', '/auth/login', { email, password }, { noRedirect: true });
       window.location.assign('/board/');
     } catch (x) {
-      setErr(x.status === 423 ? 'Too many attempts. Try again in 15 minutes.' : x.status === 401 ? "That email and password don't match." : x.status ? "That email and password don't match." : "Can't reach the board right now. Try again in a moment.");
+      setErr(x.status === 429 ? 'Too many attempts. Try again in 15 minutes.' : x.status === 401 ? "That email and password don't match." : x.status ? "That email and password don't match." : "Can't reach the board right now. Try again in a moment.");
       setBusy(false);
     }
   }

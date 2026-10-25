@@ -53,7 +53,7 @@ class Client {
     return { status: res.status, json, buf, headers: res.headers };
   }
   async acceptInvite(token, password = PW) {
-    const r = await this.req('POST', `/auth/invite/${token}`, { password });
+    const r = await this.req('POST', '/auth/invite/accept', { token, password });
     if (r.status !== 201) throw new Error(`invite accept ${r.status} ${r.buf}`);
     this.csrf = r.json.csrf; this.user = r.json.user;
     return r;
@@ -97,7 +97,7 @@ const eq = (a, b, what) => { if (a !== b) throw new Error(`${what || 'value'}: e
 const ok = (c, what) => { if (!c) throw new Error(what); };
 
 // ---- setup helpers
-function tokenOf(url) { return new URL(url).searchParams.get('token') || url.split('token=')[1] || url.split('#token=')[1]; }
+function tokenOf(url) { return new URL(url).searchParams.get('token') || url.split('token=')[1] || url.split('#')[1]; }
 
 async function makeAdmin() {
   ok(DATA_DIR, 'no DATA_DIR: run ./dev.sh first (writes .dev-state.json) or set E2E_DATA_DIR');
@@ -157,16 +157,16 @@ let admin, A, B, C, L;
 await check('admin: create via CLI and accept invite', async () => { admin = await makeAdmin(); eq(admin.user.role, 'admin', 'role'); });
 await check('invite: GET shows email/name, POST sets password, session works', async () => {
   A = await makeMember(admin, 'A');
-  const g = await new Client().req('GET', `/auth/invite/${A.inviteToken}`);
+  const g = await new Client().req('POST', '/auth/invite/lookup', { token: A.inviteToken });
   eq(g.status, 200, 'GET invite'); eq(g.json.email, A.email, 'invite email');
-  const short = await new Client().req('POST', `/auth/invite/${A.inviteToken}`, { password: 'short' });
+  const short = await new Client().req('POST', '/auth/invite/accept', { token: A.inviteToken, password: 'short' });
   eq(short.status, 400, 'short password');
   await A.acceptInvite(A.inviteToken);
   const me = await A.req('GET', '/auth/me');
   eq(me.status, 200, '/auth/me'); eq(me.json.user.email, A.email, 'me.email'); ok(me.json.csrf, 'csrf in body');
 });
 await check('invite: single use (reuse refused)', async () => {
-  const r = await new Client().req('POST', `/auth/invite/${A.inviteToken}`, { password: PW });
+  const r = await new Client().req('POST', '/auth/invite/accept', { token: A.inviteToken, password: PW });
   ok(r.status >= 400 && r.status < 500, `expected 4xx, got ${r.status}`);
 });
 await check('invited user appears in roster', async () => {
@@ -188,11 +188,11 @@ await check('login: wrong password 401, right password 200, logout kills session
 await check('CSRF: session write without X-CSRF-Token is 403', async () => {
   eq((await A.req('POST', '/chat', { text: 'x' }, { csrf: false })).status, 403, 'status');
 });
-await check('lockout: 5 wrong passwords then correct password is 423', async () => {
+await check('lockout: 5 wrong passwords then correct password is 429', async () => {
   L = await makeMember(admin, 'L'); await L.acceptInvite(L.inviteToken);
   const c = new Client();
   for (let i = 0; i < 5; i++) eq((await c.login(L.email, 'wrong-password-xx')).status, 401, `attempt ${i + 1}`);
-  eq((await c.login(L.email)).status, 423, 'correct pw while locked');
+  eq((await c.login(L.email)).status, 429, 'correct pw while locked');
 });
 
 // 3. chat

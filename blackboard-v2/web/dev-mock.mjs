@@ -99,7 +99,8 @@ const server = http.createServer((req, res) => {
       if (body.password !== 'password') return json(401, { error: 'invalid', message: 'Wrong email or password' });
       res.setHeader('Set-Cookie', 'bb_session=ok; Path=/board; HttpOnly; SameSite=Lax'); return json(200, { ok: true });
     }
-    if (r.startsWith('/auth/invite/')) return m === 'GET' ? json(200, { email: 'new@example.com', name: 'New Person' }) : json(200, { ok: true });
+    if (r === '/auth/invite/lookup') return json(200, { email: 'new@example.com', name: 'New Person' });
+    if (r === '/auth/invite/accept') return json(201, { ok: true });
     if (r === '/healthz') return json(200, { ok: true });
     if (!authed) return json(401, { error: 'unauthorized', message: 'Sign in' });
     if (m !== 'GET' && req.headers['x-csrf-token'] !== CSRF && !r.startsWith('/_mock')) return json(403, { error: 'csrf', message: 'Bad CSRF token' });
@@ -162,7 +163,7 @@ const server = http.createServer((req, res) => {
     if (sd) { const sm = summaries.find((x) => x.day === sd[1]); return sm ? json(200, sm) : json(404, { error: 'not_found', message: 'no summary' }); }
     if (r === '/admin/users') return json(200, { users: [me, { id: 2, name: 'Sam', email: 'sam@example.com', role: 'member' }] });
     if (r === '/admin/agents' && m === 'GET') return json(200, { agents: [{ name: 'pm', role: 'product' }, { name: 'dev', role: 'developer' }] });
-    if (r === '/admin/invites') return json(201, { url: 'http://127.0.0.1:' + PORT + '/board/invite/?token=mock' });
+    if (r === '/admin/invites') return json(201, { url: 'http://127.0.0.1:' + PORT + '/board/invite/#mock' });
     if (r.startsWith('/admin/agents')) return json(201, { name: 'x', token: 'mock-token-shown-once' });
     return json(404, { error: 'not_found', message: 'mock: ' + m + ' ' + r });
   });

@@ -9,21 +9,22 @@ Code lives in `blackboard-v2/server` (Express, CommonJS, Node 20+, better-sqlite
 - The Express app is mounted at `/board/api` and listens on `127.0.0.1:${PORT:-8790}`. The WebSocket is `/board/api/ws`.
 - Human auth: session cookie `bb_session` (HttpOnly, Secure unless `INSECURE_COOKIES=1` for local dev, SameSite=Lax, `Path=/board`). Every write by a session needs header `X-CSRF-Token` equal to the value from `GET /auth/me` (also set as readable cookie is NOT allowed; return it in the body).
 - Agent auth: `Authorization: Bearer <token>` (no cookie, no CSRF). Tokens are stored as SHA-256 hashes.
-- Everything except `POST /auth/login`, `GET /auth/invite/:token`, `POST /auth/invite/:token` and `GET /healthz` returns 401 without auth.
+- Everything except `POST /auth/login`, `POST /auth/invite/lookup`, `POST /auth/invite/accept` and `GET /healthz` returns 401 without auth.
 - Time is ISO 8601 UTC. Ids are integers unless noted.
 
 ## Auth
 
 | Route | Notes |
 |---|---|
-| `POST /auth/login` `{email,password}` | argon2id (`argon2` package). 5 wrong passwords lock the account 15 min (423 `locked`). Same error for unknown email and wrong password. Per-IP rate limit too. |
+| `POST /auth/login` `{email,password}` | argon2id (`argon2` package). Password max 256 bytes (400 `password_too_long`). Failures are counted per (lowercased email, client IP), also for unknown emails (dummy argon2 verify). Wrong password or unknown email: always 401 `{error:'invalid_credentials'}`. After 5 failures within 15 min for that (email, IP): 429 `{error:'too_many_attempts'}` with `Retry-After`, for real and unknown emails alike. Other IPs are unaffected; `node src/cli.js unlock <email>` clears it. Per-IP rate limit too. Sessions: new id at login, 12 h idle / 14 d absolute expiry. |
 | `POST /auth/logout`, `POST /auth/logout-all` | |
+| `POST /auth/password` `{current,password}` | min 12 chars, max 256 bytes; deletes the user's other sessions (and closes their sockets) |
 | `GET /auth/me` | `{ user:{id,name,email,role}, csrf }` |
-| `POST /admin/invites` `{email,name,role}` (admin) | returns `{ url }` containing a one-time token (hash stored, 7 day expiry) |
-| `GET /auth/invite/:token` | `{ email, name }` |
-| `POST /auth/invite/:token` `{password}` | min 12 chars; creates the user, logs in |
+| `POST /admin/invites` `{email,name,role}` (admin) | returns `{ url }` = `<base>/board/invite/#<token>` (token in the URL fragment; hash stored; single use; 48 h expiry) |
+| `POST /auth/invite/lookup` `{token}` | `{ email, name }`; 404 `invalid_invite` if unknown, used or expired. The old `GET/POST /auth/invite/:token` routes are removed. |
+| `POST /auth/invite/accept` `{token,password}` | min 12 chars, max 256 bytes; single use; creates the user, logs in (201) |
 | `GET /admin/users`, `DELETE /admin/users/:id` | admin; delete also kills sessions |
-| `POST /admin/agents` `{name,role}` (admin) | returns the token once |
+| `POST /admin/agents` `{name,role}` (admin) | returns the token once; 409 `name_taken_by_user` if the name equals a user's name or slug |
 | `GET /admin/agents`, `POST /admin/agents/:name/rotate`, `DELETE /admin/agents/:name` | |
 
 First admin: `node src/cli.js create-admin <email> <name>` prints an invite URL.
@@ -106,6 +107,8 @@ The board page shows the latest summary as a card (also clickable: opens the lis
 ## Addendum 2 (UX review, 2026-10-25)
 
 - The 120 s cap counts from `/voice/floor/start`; after stop or cap the holder keeps the floor for a 20 s upload grace.
+- A pending speaker (granted from the queue, not yet called `/voice/floor/start`) MAY upload; the upload releases the floor.
+- JSON bodies are limited to 64 KB (except `/bb/import`); chat authors reach agents as `human:<name>`.
 - `POST /voice/notes` accepts `audio/webm` and `audio/mp4` (Safari); magic bytes checked for both; audio is served with its stored type.
 - `floor` WS messages add `reason` (posted, cancelled, cap, skipped_timeout, admin_skip, disconnect, admin_clear) and `userId`.
 

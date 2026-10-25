@@ -11,10 +11,11 @@ export default function Invite() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    const t = new URLSearchParams(window.location.search).get('token') || '';
+    const t = window.location.hash.slice(1);
+    history.replaceState(null, '', window.location.pathname);
     setToken(t);
     if (!t) return setErr('This invite link is missing its token.');
-    api('GET', '/auth/invite/' + encodeURIComponent(t), undefined, { noRedirect: true })
+    api('POST', '/auth/invite/lookup', { token: t }, { noRedirect: true })
       .then(setWho).catch(() => setErr('This invite link has expired or was already used. Ask the admin for a new one.'));
   }, []);
 
@@ -24,7 +25,7 @@ export default function Invite() {
     if (password !== confirmPw) return setErr("The two passwords don't match.");
     setBusy(true); setErr('');
     try {
-      await api('POST', '/auth/invite/' + encodeURIComponent(token), { password }, { noRedirect: true });
+      await api('POST', '/auth/invite/accept', { token, password }, { noRedirect: true });
       window.location.assign('/board/');
     } catch (x) { setErr(x.message); setBusy(false); }
   }
