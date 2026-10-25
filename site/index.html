@@ -335,8 +335,8 @@
             <button class="button" type="submit" id="waitlist-submit">Join the waitlist</button>
           </div>
           <div class="hp" aria-hidden="true">
-            <label for="waitlist-website">Leave this field empty</label>
-            <input id="waitlist-website" name="website" type="text" tabindex="-1" autocomplete="off">
+            <label for="waitlist-hp">Leave this field empty</label>
+            <input id="waitlist-hp" name="hp_f7q" type="text" tabindex="-1" autocomplete="off">
           </div>
           <p class="notice" id="waitlist-notice" aria-live="polite"></p>
         </form>
@@ -362,7 +362,7 @@
   (function () {
     var form = document.getElementById("waitlist-form");
     var email = document.getElementById("waitlist-email");
-    var website = document.getElementById("waitlist-website");
+    var website = document.getElementById("waitlist-hp");
     var button = document.getElementById("waitlist-submit");
     var notice = document.getElementById("waitlist-notice");
     var success = document.getElementById("waitlist-success");
@@ -377,7 +377,7 @@
     function showError(key) {
       notice.textContent = MESSAGES[key] || MESSAGES.server_error;
       notice.dataset.state = "error";
-      email.setAttribute("aria-invalid", "true");
+      if (key === "empty" || key === "invalid_email") email.setAttribute("aria-invalid", "true");
       email.setAttribute("aria-describedby", "waitlist-notice");
       email.focus();   // what they typed stays in the field
     }
@@ -414,7 +414,7 @@
       fetch(form.action, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: address, website: website.value }),
+        body: JSON.stringify({ email: address, hp_f7q: website.value }),
         signal: controller && controller.signal
       })
         .then(function (response) {

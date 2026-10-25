@@ -24,6 +24,7 @@ Settings (environment variables):
 """
 
 import csv
+import os
 import json
 import os
 import re
@@ -44,7 +45,7 @@ RETENTION_DAYS = int(os.environ.get("WAITLIST_RETENTION_DAYS", "365"))
 
 MAX_BODY = 2048          # bytes; a sign-up is one short field
 MAX_EMAIL = 254          # RFC 5321 path limit
-HONEYPOT = "website"     # hidden field that people never see; bots fill it in
+HONEYPOT = "hp_f7q"     # hidden field that people never see; bots fill it in
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s.]{2,}$")
 
 SCHEMA = """
@@ -82,6 +83,17 @@ def init_db(path=None):
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     with connect(path) as conn:
         conn.executescript(SCHEMA)
+
+
+def csv_safe_cell(value):
+    """Stop spreadsheets running a cell as a formula (OWASP CSV injection)."""
+    if isinstance(value, str) and value[:1] in ("=", "+", "-", "@", "\t", "\r"):
+        return "'" + value
+    return value
+
+
+def csv_safe_row(row):
+    return [csv_safe_cell(v) for v in row]
 
 
 def normalize_email(raw):
@@ -247,10 +259,11 @@ def main(argv):
         with connect() as conn:
             out = csv.writer(sys.stdout)
             out.writerow(["email", "created_at", "policy_version"])
-            out.writerows(conn.execute("SELECT email, created_at, policy_version FROM waitlist ORDER BY id"))
+            out.writerows(csv_safe_row(r) for r in conn.execute("SELECT email, created_at, policy_version FROM waitlist ORDER BY id"))
     elif command == "backup" and len(argv) == 3:
         init_db()
         # SQLite's online backup copies a consistent snapshot even while sign-ups are being written
+        os.umask(0o077)   # the copy holds every address: owner-only
         with connect() as src, sqlite3.connect(argv[2]) as dst:
             src.backup(dst)
         print(f"backed up to {argv[2]}")

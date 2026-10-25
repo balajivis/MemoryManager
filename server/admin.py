@@ -53,17 +53,20 @@ class AdminHandler(BaseHTTPRequestHandler):
 
     # --- request guards -------------------------------------------------------
 
+    @staticmethod
+    def hostname(host):
+        return host.rsplit(":", 1)[0] if ":" in host else host
+
     def allowed_hosts(self):
-        port = self.server.server_address[1]
-        return {f"127.0.0.1:{port}", f"localhost:{port}"}
+        return {"127.0.0.1", "localhost"}
 
     def guard(self):
         """True if the request may proceed; otherwise sends 403 and returns False."""
-        if self.headers.get("Host", "") not in self.allowed_hosts():
+        if self.hostname(self.headers.get("Host", "")) not in self.allowed_hosts():
             self.send_page(403, "Forbidden", "<p>This admin only answers on localhost.</p>")
             return False
         origin = self.headers.get("Origin")
-        if origin and urlsplit(origin).netloc not in self.allowed_hosts():
+        if origin and urlsplit(origin).hostname not in self.allowed_hosts():
             self.send_page(403, "Forbidden", "<p>Cross-site requests aren't allowed.</p>")
             return False
         return True
@@ -195,7 +198,7 @@ class AdminHandler(BaseHTTPRequestHandler):
         out = io.StringIO()
         writer = csv.writer(out)
         writer.writerow(["email", "created_at", "policy_version"])
-        writer.writerows(rows)
+        writer.writerows(waitlist.csv_safe_row(r) for r in rows)
         body = out.getvalue().encode("utf-8")
         self.send_response(200)
         self.send_header("Content-Type", "text/csv; charset=utf-8")

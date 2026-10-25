@@ -83,7 +83,7 @@ class Signups(WaitlistServer):
         self.assertEqual(self.rows(), [])
 
     def test_honeypot_pretends_success_and_stores_nothing(self):
-        status, _, body = self.post({"email": "bot@example.com", "website": "http://spam"})
+        status, _, body = self.post({"email": "bot@example.com", "hp_f7q": "http://spam"})
         self.assertEqual(status, 200)
         self.assertEqual(json.loads(body)["result"], "joined")
         self.assertEqual(self.rows(), [])
@@ -101,12 +101,12 @@ class Signups(WaitlistServer):
 
     def test_form_post_without_javascript_redirects(self):
         form = "application/x-www-form-urlencoded"
-        status, headers, _ = self.post(b"email=ada%40example.com&website=", ctype=form)
+        status, headers, _ = self.post(b"email=ada%40example.com&hp_f7q=", ctype=form)
         self.assertEqual((status, headers["Location"]), (303, "/joined.html"))
         self.assertEqual(self.rows(), [("ada@example.com", "draft")])
         status, headers, _ = self.post(b"email=not-an-email", ctype=form)
         self.assertEqual((status, headers["Location"]), (303, "/join-error.html"))
-        status, headers, _ = self.post(b"email=bot%40example.com&website=spam", ctype=form)
+        status, headers, _ = self.post(b"email=bot%40example.com&hp_f7q=spam", ctype=form)
         self.assertEqual((status, headers["Location"]), (303, "/joined.html"))   # honeypot looks like success
         self.assertEqual(len(self.rows()), 1)
         for location in ("/joined.html", "/join-error.html"):
@@ -191,6 +191,24 @@ class OperatorCommands(unittest.TestCase):
             self.assertIn("backed up", run("backup", copy))
             with sqlite3.connect(copy) as conn:
                 self.assertEqual(conn.execute("SELECT email FROM waitlist").fetchall(), [("bob@example.com",)])
+
+
+class HardeningTest(unittest.TestCase):
+    def test_csv_cells_that_look_like_formulas_are_neutralised(self):
+        for bad in ["=1+1@x.co", "+cmd@x.co", "-2+3@x.co", "@sum@x.co"]:
+            self.assertEqual(waitlist.csv_safe_cell(bad), "'" + bad)
+        self.assertEqual(waitlist.csv_safe_cell("ada@example.com"), "ada@example.com")
+
+    def test_backup_file_is_owner_only(self):
+        with tempfile.TemporaryDirectory() as d:
+            env = {**os.environ, "WAITLIST_DB": os.path.join(d, "w.db")}
+            dest = os.path.join(d, "copy.db")
+            old = os.umask(0o022)
+            try:
+                subprocess.run([sys.executable, waitlist.__file__, "backup", dest], env=env, check=True, capture_output=True)
+            finally:
+                os.umask(old)
+            self.assertEqual(os.stat(dest).st_mode & 0o077, 0)
 
 
 if __name__ == "__main__":
