@@ -114,7 +114,9 @@ Queued: ● 🎙 Dana is talking · 0:42      You're #2 in line      [Leave the 
   - Connection error: "Can't reach the board right now. Try again in a moment."
 - Nothing else is visible logged out: no team name, no counts.
 
-### 3b. Accept an invite (`/board/invite/<token>`)
+### 3b. Accept an invite (`/board/invite/#<token>`)
+
+The token travels in the **#fragment** and is POSTed in the body, so it never reaches access logs or Referer headers (qa R3). The page removes the fragment from the address bar (`history.replaceState`) as soon as it has read it.
 
 - "**You're invited to the team board.**" "<Admin name> invited you as <email>."
 - Fields:
@@ -178,6 +180,55 @@ The HITL board v2 layout and fixes, plus the floor, voice, a log feed and the us
 - Playback speed default (1×)
 
 These are stored per user on the server, so they follow you to any device.
+
+### 3g. Detail drawer (clickable cards; user request, @dev 10:53:06)
+
+**What opens it:**
+- A **summary tile** (Blocked, Needs a human, Open, Delivered) opens a **list drawer** of the matching items.
+- A **work item**, a Needs-a-human row or a feature card opens that **item's drawer**.
+- In a list drawer, tapping a row opens the item drawer stacked on top of it, with a **‹ Back** link.
+
+**Behavior:**
+- Desktop: a right-side drawer, 440px, over a dimmed board.
+- Mobile: a full-height sheet that slides up.
+- Closes with **×**, Esc, a click on the dimmed area, or browser Back. The URL hash is `#item-<id>` or `#tile-<name>`, so links and Back work.
+- Focus moves into the drawer, is trapped there while it's open, and returns to the card that opened it.
+- Updates live: if the item changes while the drawer is open, it updates in place, with a brief highlight on the changed field.
+
+**Item drawer content:**
+- Title (members can edit it inline).
+- Status chip, with **Needed:** in bold when the item needs a human or is blocked.
+- The step bar with all six labels, the current step emphasized.
+- Owner (changeable), created and updated times ("Updated 12 min ago by dev").
+- **Activity**: step and status changes, with who and when, newest first. Show it if the API returns events; otherwise leave the section out rather than show it empty.
+- Actions: **◀ Back a step** / **Forward a step ▶**, a status select (the Needed prompt as on the board), and **Mark as live**.
+- Admin only: **Delete item**, with the confirm "Delete '<title>'? This can't be undone."
+
+**List drawer content:**
+- A heading with the count, e.g. "**Blocked · 2**".
+- Rows: title, Needed line, owner, and how long it's been waiting. They're sorted the same way as the board (blocked first, then oldest).
+- When empty: "Nothing here right now."
+
+### 3h. Daily summary (user request; pm writes it ~18:00)
+
+**Where it shows:**
+- Pinned as a compact one-liner under the directive banner: "**Today's summary** from pm · 18:02 · **Read**". It's collapsed, with an unread dot until opened.
+- In full at the top of the **Agent log** tab.
+
+**The card:**
+```
+Daily summary · Sat Oct 25                          by pm · 18:02   [🔊] [×]
+DONE            Waitlist fixes  e4a5968 · Polish layer  27f4eed · …
+DECISIONS       Invites expire after 7 days · Tap to talk, no press-and-hold
+NEEDS A HUMAN   Contact email for the privacy policy  → (opens the item drawer)
+NEXT            Floor + voice backend · bb HTTP backend
+                                                       Previous days ›
+```
+- The section labels are small mono caps; items flow inline, separated by "·". Commit hashes are mono chips.
+- Needs-a-human entries link to their item drawers.
+- 🔊 reads the whole summary aloud through the playback lane (§2b).
+- **Previous days ›** opens a list drawer of past summaries, newest first.
+- Before the first summary of the day: "No summary yet today. pm posts one around 18:00."
 
 ---
 
