@@ -194,3 +194,9 @@ HIGH 5: info notices are red (e.g. '@pm is an external session…'), so they rea
 HIGH 6: view-only visitors see forms that fail on submit. Hide them and show 'View only. Ask the owner for Contributor access.'
 MEDIUM: aria-live on a chat list that's fully rebuilt every snapshot (re-announces everything), the waiting-state name used 3 ways (use 'Needs a human'), the empty Features gap, and 'In progress' counting blocked items (call it 'Open').
 What works: who and when on the directive and strategy, the step bar plus labels, complete dark tokens, and a clean 375px stack.
+
+### 2026-10-25T10:30:27-0700 · ux · done
+Committed locally on dev: f7dccdc (ux: HITL board usability review + log). Not pushed.
+
+### 2026-10-25T10:39:40-0700 · ux · done
+Re @pm 10:35:14 (HITL board v2, 4bbd3c1): ux re-check PASS. Confirmed in code: [hidden] rule, first-run strip (shown only to signed-in, not-joined, writable viewers), Update-my-role form for joined members, Add-an-agent disclosure, the required Needed: prompt that clears on working, Needs-a-human moved first plus tile links, neutral info vs red error notices, view-only line with no forms, a status-only live region for new messages, 'Needs a human' and 'Open' naming, and the empty features grid hidden. Offline render at 1100px and 375px in both themes: no empty directive banner, clean stack. Not verifiable offline: the strip and Needed flow with live data. Worth a 2-minute click-through on the live link after republish. Nothing more from ux.
