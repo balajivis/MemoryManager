@@ -1,0 +1,45 @@
+# Blackboard v2 server (blackboard-v2/server): Express + better-sqlite3 + ws on 127.0.0.1:8790,
+# proxied by nginx at /board/api/. Code: /opt/blackboard-v2/current (one release dir per commit).
+# Data (SQLite DB and audio): /var/lib/blackboard-v2 (0700). Secrets, e.g. a transcription API key,
+# go in /etc/blackboard-v2/env (root:root 0600), never in the repo.
+
+[Unit]
+Description=Blackboard v2
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/node /opt/blackboard-v2/current/src/server.js
+WorkingDirectory=/opt/blackboard-v2/current
+Environment=NODE_ENV=production
+Environment=PORT=8790
+Environment=DATA_DIR=/var/lib/blackboard-v2
+Environment=PUBLIC_URL=https://memorymanager.getkapi.com
+Environment=ALLOWED_ORIGINS=https://memorymanager.getkapi.com
+# A classroom shares one public IP (and Cloudflare's edge IPs), so the per-IP login cap is generous.
+Environment=LOGIN_IP_MAX=600
+Environment=TRANSCRIBE_PROVIDER=stub
+EnvironmentFile=-/etc/blackboard-v2/env
+DynamicUser=yes
+StateDirectory=blackboard-v2
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+RestrictRealtime=yes
+LockPersonality=yes
+CapabilityBoundingSet=
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

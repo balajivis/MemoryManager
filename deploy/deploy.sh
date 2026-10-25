@@ -25,6 +25,8 @@ resolve() {  # full hash of a ref, or die
 }
 
 require_merged() {  # deploys only ever come from main (docs/process/release-process.md)
+  # DEPLOY_FROM_DEV=1: the user's one-day exception (2026-10-25, Blackboard v2 classroom deploy)
+  [ "${DEPLOY_FROM_DEV:-}" = 1 ] && { echo "deploy: DEPLOY_FROM_DEV=1, deploying an unmerged commit (user exception)"; return 0; }
   git -C "$REPO" fetch --quiet origin main
   git -C "$REPO" merge-base --is-ancestor "$1" origin/main \
     || die "$(git -C "$REPO" rev-parse --short "$1") is not merged into origin/main; deploys only come from main"
