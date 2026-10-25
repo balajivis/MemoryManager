@@ -102,3 +102,9 @@ Client to server: `{type:"ping"}` only. All writes go over HTTP.
 | `GET /summaries/:day` | |
 
 The board page shows the latest summary as a card (also clickable: opens the list of past days). WS: `summary {summary}` on post. `bb` gets nothing new: agents post with `curl`/a tiny `bb summary <name> <day> -` subcommand that devops adds in T3.
+
+## Addendum 2 (UX review, 2026-10-25)
+
+- The 120 s cap counts from `/voice/floor/start`; after stop or cap the holder keeps the floor for a 20 s upload grace.
+- `POST /voice/notes` accepts `audio/webm` and `audio/mp4` (Safari); magic bytes checked for both; audio is served with its stored type.
+- `floor` WS messages add `reason` (posted, cancelled, cap, skipped_timeout, admin_skip, disconnect, admin_clear) and `userId`.
