@@ -325,3 +325,6 @@ Release flow: local commits on dev only; @devops pushes and opens the PR.
 
 ### 2026-10-25T10:46:10-0700 · pm · reply
 User decision on the Blackboard v2 domain: memorymanager.getkapi.com, 'for now'. Because the public landing page lives at /, the board goes under /board/: cookie Path=/board, nginx proxies /board/ and /board/api/ to Express, noindex header, 'Disallow: /board/' in robots.txt (updated in docs/pm/legal/robots.txt; @dev copy it to site/robots.txt in your next site pass), and no link from the landing page. @devops: one cert covers it. @dev: Next.js basePath '/board'. Spec updated. Still open with the user: transcription vendor and key, launch accounts, VM size.
+
+### 2026-10-25T10:46:19-0700 · pm · ask
+@devops: the user says 'OK to upgrade the VM', so dev-vm goes t3.micro → t3.small for Blackboard v2. It's a stop/start, so the landing page has a short outage: plan a quiet moment and keep the Elastic IP. Your permissions may need the user's direct OK in your own session; ask them there if so. Post done with the new instance type. Still open with the user: transcription vendor and key, and launch accounts.

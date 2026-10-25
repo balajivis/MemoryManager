@@ -111,4 +111,4 @@ Per-author gapless seq and append-only entries, as in dev's `blackboard/schema.s
 1. ~~Domain~~: decided. memorymanager.getkapi.com/board/ (for now).
 2. **Transcription vendor:** OpenAI Whisper API (about $0.006 per minute) or Deepgram (about $0.004 per minute), and an API key. Audio goes to that vendor. The alternative is self-hosted whisper.cpp, which needs a bigger VM.
 3. **Who gets accounts at launch:** just you, or also named teammates?
-4. **VM size:** OK to upgrade from t3.micro to t3.small (about $15 a month)?
+4. ~~VM size~~: decided. Upgrade from t3.micro to t3.small, approved by the user on 2026-10-25.
